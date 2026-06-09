@@ -3,9 +3,20 @@ import Navbar from '../components/ui/Navbar';
 import { api, Budget, Category } from '../services/api';
 import { Plus, X } from 'lucide-react';
 
+const CATEGORIES: Category[] = [
+  { id: 'expense-grocery', name: 'Grocery', type: 'expense' },
+  { id: 'expense-transport', name: 'Transport', type: 'expense' },
+  { id: 'expense-food', name: 'Food', type: 'expense' },
+  { id: 'expense-medical', name: 'Medical', type: 'expense' },
+  { id: 'expense-entertainment', name: 'Entertainment', type: 'expense' },
+  { id: 'expense-travel', name: 'Travel', type: 'expense' },
+  { id: 'expense-shopping', name: 'Shopping', type: 'expense' },
+  { id: 'expense-utilities', name: 'Utilities', type: 'expense' },
+  { id: 'expense-other', name: 'Other Expense', type: 'expense' },
+];
+
 export default function BudgetPlanning() {
   const [budgets, setBudgets] = useState<Budget[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ category_id: '', monthly_limit: '', month: new Date().getMonth() + 1, year: new Date().getFullYear() });
@@ -14,8 +25,8 @@ export default function BudgetPlanning() {
 
   const load = () => {
     setLoading(true);
-    Promise.all([api.budgets.list(), api.categories.list()])
-      .then(([b, c]) => { setBudgets(b); setCategories(c); })
+    api.budgets.list()
+      .then(setBudgets)
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
   };
@@ -26,7 +37,14 @@ export default function BudgetPlanning() {
     if (!form.category_id || !form.monthly_limit) { setError('Category and limit are required'); return; }
     setSaving(true); setError('');
     try {
-      await api.budgets.create({ ...form, monthly_limit: parseFloat(form.monthly_limit) });
+      // Find category name from hardcoded list
+      const cat = CATEGORIES.find(c => c.id === form.category_id);
+      await api.budgets.create({
+        monthly_limit: parseFloat(form.monthly_limit),
+        month: form.month,
+        year: form.year,
+        category_name: cat?.name,
+      });
       setShowModal(false);
       setForm({ category_id: '', monthly_limit: '', month: new Date().getMonth() + 1, year: new Date().getFullYear() });
       load();
@@ -59,9 +77,9 @@ export default function BudgetPlanning() {
         {budgets.length > 0 && (
           <div style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
             {[
-              { label: 'Total Budget', value: `$${totalBudget.toLocaleString()}` },
-              { label: 'Total Spent', value: `$${totalSpent.toLocaleString()}` },
-              { label: 'Remaining', value: `$${(totalBudget - totalSpent).toLocaleString()}`, color: totalBudget - totalSpent >= 0 ? 'var(--sage)' : 'var(--red)' },
+              { label: 'Total Budget', value: `₹${totalBudget.toLocaleString('en-IN')}` },
+              { label: 'Total Spent', value: `₹${totalSpent.toLocaleString('en-IN')}` },
+              { label: 'Remaining', value: `₹${(totalBudget - totalSpent).toLocaleString('en-IN')}`, color: totalBudget - totalSpent >= 0 ? 'var(--sage)' : 'var(--red)' },
             ].map(s => (
               <div key={s.label} style={{ background: 'var(--warm-white)', borderRadius: 12, padding: '16px 20px', flex: 1 }}>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>{s.label}</div>
@@ -90,12 +108,13 @@ export default function BudgetPlanning() {
             {budgets.map(b => {
               const pct = b.monthly_limit > 0 ? Math.min(((b.spent || 0) / b.monthly_limit) * 100, 100) : 0;
               const remaining = b.monthly_limit - (b.spent || 0);
+              const catName = b.category?.name || (b as any).category_name || '—';
               return (
                 <div key={b.id} style={{ display: 'grid', gridTemplateColumns: '1fr 120px 120px 120px 180px', gap: 16, padding: '18px 24px', borderBottom: '1px solid var(--border-light)', alignItems: 'center' }}>
-                  <span style={{ fontWeight: 500 }}>{b.category?.name || '—'}</span>
-                  <span>${b.monthly_limit.toLocaleString()}</span>
-                  <span style={{ color: pct > 90 ? 'var(--red)' : 'var(--text-primary)' }}>${(b.spent || 0).toLocaleString()}</span>
-                  <span style={{ color: remaining < 0 ? 'var(--red)' : 'var(--sage)', fontWeight: 500 }}>${remaining.toLocaleString()}</span>
+                  <span style={{ fontWeight: 500 }}>{catName}</span>
+                  <span>₹{b.monthly_limit.toLocaleString('en-IN')}</span>
+                  <span style={{ color: pct > 90 ? 'var(--red)' : 'var(--text-primary)' }}>₹{(b.spent || 0).toLocaleString('en-IN')}</span>
+                  <span style={{ color: remaining < 0 ? 'var(--red)' : 'var(--sage)', fontWeight: 500 }}>₹{remaining.toLocaleString('en-IN')}</span>
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 4 }}>
                       <span style={{ color: 'var(--text-muted)' }}>{pct.toFixed(0)}% used</span>
@@ -124,10 +143,10 @@ export default function BudgetPlanning() {
             <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>Category *</label>
             <select style={{ ...inp, marginBottom: 16 }} value={form.category_id} onChange={e => setForm(f => ({ ...f, category_id: e.target.value }))}>
               <option value="">Select category…</option>
-              {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
 
-            <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>Monthly Limit *</label>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>Monthly Limit (₹) *</label>
             <input style={{ ...inp, marginBottom: 16 }} placeholder="0.00" type="number" min="0" value={form.monthly_limit} onChange={e => setForm(f => ({ ...f, monthly_limit: e.target.value }))} />
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>

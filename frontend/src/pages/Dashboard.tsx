@@ -130,9 +130,9 @@ export default function Dashboard() {
           <>
             {/* Stats Row */}
             <div style={{ display: 'flex', gap: 16, marginBottom: 20 }}>
-              <StatCard label="Total Income" value={`$${totalIncome.toLocaleString()}`} sub={totalIncome > 0 ? 'This period' : 'No income yet'} trend="up" />
-              <StatCard label="Total Expenses" value={`$${totalExpenses.toLocaleString()}`} sub={totalExpenses > 0 ? 'This period' : 'No expenses yet'} trend="down" />
-              <StatCard label="Net Savings" value={`$${netSavings.toLocaleString()}`} sub={netSavings >= 0 ? 'Positive balance' : 'Deficit'} trend={netSavings >= 0 ? 'up' : 'down'} />
+              <StatCard label="Total Income" value={`₹${totalIncome.toLocaleString()}`} sub={totalIncome > 0 ? 'This period' : 'No income yet'} trend="up" />
+              <StatCard label="Total Expenses" value={`₹${totalExpenses.toLocaleString()}`} sub={totalExpenses > 0 ? 'This period' : 'No expenses yet'} trend="down" />
+              <StatCard label="Net Savings" value={`₹${netSavings.toLocaleString()}`} sub={netSavings >= 0 ? 'Positive balance' : 'Deficit'} trend={netSavings >= 0 ? 'up' : 'down'} />
               <StatCard label="Savings Rate" value={`${savingsRate.toFixed(1)}%`} sub="Of income saved" trend="up" />
             </div>
 
@@ -155,8 +155,8 @@ export default function Dashboard() {
                     <ResponsiveContainer width="100%" height={220}>
                       <AreaChart data={chartData}>
                         <XAxis dataKey="month" axisLine={false} tickLine={false} style={{ fontSize: 11 }} />
-                        <YAxis hide={false} axisLine={false} tickLine={false} style={{ fontSize: 11 }} tickFormatter={(v: any) => '$' + Number(v).toLocaleString()} width={70} />
-                        <Tooltip formatter={(v: any) => `$${Number(v).toLocaleString()}`} />
+                        <YAxis hide={false} axisLine={false} tickLine={false} style={{ fontSize: 11 }} tickFormatter={(v: any) => '₹' + Number(v).toLocaleString()} width={70} />
+                        <Tooltip formatter={(v: any) => `₹${Number(v).toLocaleString()}`} />
                         <Area type="monotone" dataKey="income" stroke="var(--sage)" fill="#e8f0e9" strokeWidth={2} dot={{ r: 5, fill: "var(--sage)" }} activeDot={{ r: 7 }} />
                         <Area type="monotone" dataKey="expenses" stroke="var(--gold)" fill="#f5edd8" strokeWidth={2} dot={{ r: 5, fill: "var(--gold)" }} activeDot={{ r: 7 }} />
                       </AreaChart>
@@ -179,7 +179,7 @@ export default function Dashboard() {
                                 <Cell key={i} fill={['#5c7a5e','#8faa91','#c9b99a','#7a8fa6','#a67a7a','#7a9ca6'][i % 6]} />
                               ))}
                             </Pie>
-                            <Tooltip formatter={(v: any) => `$${Number(v).toLocaleString()}`} />
+                            <Tooltip formatter={(v: any) => `₹${Number(v).toLocaleString()}`} />
                           </PieChart>
                         </ResponsiveContainer>
                         {topCategories.slice(0, 6).map((cat: any, i: number) => (
@@ -226,7 +226,7 @@ export default function Dashboard() {
                         <div key={t.id} style={{ display: 'grid', gridTemplateColumns: '110px 1fr 130px 110px', gap: 12, padding: '12px 0', borderBottom: '1px solid var(--border-light)', fontSize: 13, alignItems: 'center' }}>
                           <span style={{ color: 'var(--text-muted)' }}>{new Date(t.transaction_date || t.date).toLocaleDateString()}</span>
                           <span style={{ fontWeight: 500 }}>{t.description}</span>
-                          <span><span style={{ background: catColors[t.category?.name || ''] || 'var(--cream)', padding: '2px 10px', borderRadius: 20, fontSize: 12 }}>{t.category?.name || '—'}</span></span>
+                          <span><span style={{ background: catColors[t.category?.name || ''] || 'var(--cream)', padding: '2px 10px', borderRadius: 20, fontSize: 12 }}>{t.category?.name || (t as any).merchant_name || '—'}</span></span>
                           <span style={{ textAlign: 'right', fontWeight: 600, color: t.type === 'income' ? 'var(--success)' : 'var(--red)' }}>
                             {t.type === 'income' ? '+' : '-'}${Math.abs(t.amount).toFixed(2)}
                           </span>
@@ -254,9 +254,9 @@ export default function Dashboard() {
                 <div style={{ background: 'var(--warm-white)', borderRadius: 12, padding: 20 }}>
                   <div style={{ fontWeight: 600, marginBottom: 16 }}>Financial Summary</div>
                   {[
-                    { label: 'Total Income', value: `$${totalIncome.toLocaleString()}`, color: 'var(--sage)' },
-                    { label: 'Total Expenses', value: `$${totalExpenses.toLocaleString()}`, color: 'var(--red)' },
-                    { label: 'Net Balance', value: `$${netSavings.toLocaleString()}`, color: netSavings >= 0 ? 'var(--sage)' : 'var(--red)' },
+                    { label: 'Total Income', value: `₹${totalIncome.toLocaleString()}`, color: 'var(--sage)' },
+                    { label: 'Total Expenses', value: `₹${totalExpenses.toLocaleString()}`, color: 'var(--red)' },
+                    { label: 'Net Balance', value: `₹${netSavings.toLocaleString()}`, color: netSavings >= 0 ? 'var(--sage)' : 'var(--red)' },
                     { label: 'Savings Rate', value: `${savingsRate.toFixed(1)}%`, color: 'var(--text-primary)' },
                   ].map(item => (
                     <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--border-light)', fontSize: 14 }}>

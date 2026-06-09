@@ -200,7 +200,7 @@ export default function Transactions({ defaultType }: Props) {
                 {t.category?.name || t.merchant_name || '—'}
               </span>
               <span style={{ textAlign: 'right', fontWeight: 600, fontSize: 14, color: t.type === 'income' ? 'var(--success)' : 'var(--red)' }}>
-                {t.type === 'income' ? '+' : '-'}${Math.abs(t.amount).toFixed(2)}
+                {t.type === 'income' ? '+' : '-'}₹{Math.abs(t.amount).toFixed(2)}
               </span>
               <button onClick={() => openEdit(t)}
                 style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 6, padding: '5px 7px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}

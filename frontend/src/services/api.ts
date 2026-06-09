@@ -97,13 +97,17 @@ export const api = {
       request<any>(`/api/v1/families/${fid()}/savings/${id}/contribute`, {
         method: 'POST', body: JSON.stringify({ amount }),
       }),
+    update: (id: string, data: Partial<SavingsGoal>) =>
+      request<SavingsGoal>(`/api/v1/families/${fid()}/savings/${id}`, {
+        method: 'PATCH', body: JSON.stringify(data),
+      }),
     delete: (id: string) =>
       request<void>(`/api/v1/families/${fid()}/savings/${id}`, { method: 'DELETE' }),
   },
 
   budgets: {
     list: () => request<Budget[]>(`/api/v1/families/${fid()}/budgets/`),
-    create: (data: Partial<Budget>) =>
+    create: (data: any) =>
       request<Budget>(`/api/v1/families/${fid()}/budgets/`, {
         method: 'POST', body: JSON.stringify(data),
       }),
