@@ -1,0 +1,48 @@
+# backend/pyproject.toml – Tool configuration for black, isort, mypy
+
+[tool.black]
+line-length = 120
+target-version = ["py312"]
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  | app/database/migrations/versions
+  | .venv
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 120
+known_first_party = ["app"]
+skip_glob = ["*/migrations/*", ".venv/*"]
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+exclude = ["app/database/migrations/"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["app/tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
+
+[tool.coverage.run]
+source = ["app"]
+omit = [
+    "app/tests/*",
+    "app/database/migrations/*",
+    "*/venv/*",
+]
+
+[tool.coverage.report]
+skip_empty = true
+show_missing = true
+fail_under = 60

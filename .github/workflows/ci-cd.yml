@@ -1,0 +1,382 @@
+# ════════════════════════════════════════════════════════════════
+#  .github/workflows/ci-cd.yml
+#  CI/CD Pipeline for Family Office
+#
+#  Jobs:
+#    lint-backend   → flake8 + isort + black check
+#    lint-frontend  → ESLint + TypeScript check
+#    test-backend   → pytest with coverage
+#    build-docker   → build and push Docker images
+#    deploy-backend → Railway deployment
+#    deploy-frontend→ Vercel deployment
+# ════════════════════════════════════════════════════════════════
+
+name: CI / CD
+
+on:
+  push:
+    branches: [main, staging]
+  pull_request:
+    branches: [main]
+
+env:
+  PYTHON_VERSION: "3.12"
+  NODE_VERSION: "20"
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository_owner }}/family-office
+
+# Cancel in-progress runs on the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ════════════════════════════════════════════════════════════
+  #  LINT & TYPE-CHECK
+  # ════════════════════════════════════════════════════════════
+
+  lint-backend:
+    name: "Lint – Backend"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install linting tools
+        run: pip install black isort flake8 --quiet
+
+      - name: Black (formatting)
+        run: black --check app/
+
+      - name: isort (import order)
+        run: isort --check-only app/
+
+      - name: Flake8 (style)
+        run: flake8 app/ --max-line-length=120 --extend-ignore=E203,W503
+
+  lint-frontend:
+    name: "Lint – Frontend"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --frozen-lockfile
+
+      - name: TypeScript type check
+        run: npx tsc --noEmit
+
+      - name: ESLint
+        run: npm run lint --if-present
+
+  # ════════════════════════════════════════════════════════════
+  #  BACKEND TESTS
+  # ════════════════════════════════════════════════════════════
+
+  test-backend:
+    name: "Test – Backend"
+    runs-on: ubuntu-latest
+    needs: [lint-backend]
+    defaults:
+      run:
+        working-directory: backend
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: family_office_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      ENVIRONMENT: test
+      DEBUG: "false"
+      SECRET_KEY: ci-secret-key-not-used-in-production
+      JWT_SECRET_KEY: ci-jwt-secret-key-not-used-in-production
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/family_office_test
+      DATABASE_URL_SYNC: postgresql://postgres:postgres@localhost:5432/family_office_test
+      REDIS_URL: redis://localhost:6379/0
+      CELERY_BROKER_URL: redis://localhost:6379/1
+      CELERY_RESULT_BACKEND: redis://localhost:6379/2
+      OPENAI_API_KEY: sk-fake-key-for-testing
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run migrations
+        run: alembic upgrade head
+
+      - name: Run tests with coverage
+        run: |
+          pytest app/tests/ \
+            -v \
+            --tb=short \
+            --cov=app \
+            --cov-report=xml \
+            --cov-report=term-missing \
+            --cov-fail-under=60
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: success()
+        with:
+          files: ./coverage.xml
+          flags: backend
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+  # ════════════════════════════════════════════════════════════
+  #  FRONTEND BUILD CHECK
+  # ════════════════════════════════════════════════════════════
+
+  build-frontend:
+    name: "Build – Frontend"
+    runs-on: ubuntu-latest
+    needs: [lint-frontend]
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --frozen-lockfile
+
+      - name: Build production bundle
+        run: npm run build
+        env:
+          VITE_API_URL: https://api.family-office.com/api
+          VITE_APP_NAME: "Family Office"
+
+      - name: Check bundle size
+        run: |
+          BUNDLE_SIZE=$(du -sk dist/ | cut -f1)
+          echo "Bundle size: ${BUNDLE_SIZE}KB"
+          # Warn if > 5MB
+          if [ "$BUNDLE_SIZE" -gt 5000 ]; then
+            echo "::warning::Bundle size ${BUNDLE_SIZE}KB exceeds 5MB target"
+          fi
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+          retention-days: 1
+
+  # ════════════════════════════════════════════════════════════
+  #  DOCKER BUILD & PUSH
+  # ════════════════════════════════════════════════════════════
+
+  build-docker:
+    name: "Docker – Build & Push"
+    runs-on: ubuntu-latest
+    needs: [test-backend, build-frontend]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
+
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      matrix:
+        service: [backend, frontend]
+        include:
+          - service: backend
+            context: ./backend
+            dockerfile: ./docker/backend/Dockerfile
+            image: api
+          - service: frontend
+            context: ./frontend
+            dockerfile: ./docker/frontend/Dockerfile
+            image: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.image }}
+          tags: |
+            type=sha,prefix=sha-
+            type=ref,event=branch
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build and push ${{ matrix.service }}
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VITE_API_URL=${{ vars.VITE_API_URL }}
+
+  # ════════════════════════════════════════════════════════════
+  #  DEPLOY – BACKEND (Railway)
+  # ════════════════════════════════════════════════════════════
+
+  deploy-backend:
+    name: "Deploy – Backend → Railway"
+    runs-on: ubuntu-latest
+    needs: [build-docker]
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: https://api.family-office.com
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy API service
+        run: railway up --service api --detach
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Deploy Celery worker
+        run: railway up --service celery-worker --detach
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Run migrations
+        run: railway run --service api alembic upgrade head
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Health check
+        run: |
+          sleep 20
+          curl --fail --max-time 30 \
+            https://api.family-office.com/health || \
+            (echo "❌ Health check failed" && exit 1)
+          echo "✅ API is healthy"
+
+  # ════════════════════════════════════════════════════════════
+  #  DEPLOY – FRONTEND (Vercel)
+  # ════════════════════════════════════════════════════════════
+
+  deploy-frontend:
+    name: "Deploy – Frontend → Vercel"
+    runs-on: ubuntu-latest
+    needs: [build-docker]
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: https://family-office.vercel.app
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: ./frontend
+          vercel-args: "--prod"
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  # ════════════════════════════════════════════════════════════
+  #  STAGING DEPLOY (on staging branch)
+  # ════════════════════════════════════════════════════════════
+
+  deploy-staging:
+    name: "Deploy – Staging"
+    runs-on: ubuntu-latest
+    needs: [test-backend, build-frontend]
+    if: github.ref == 'refs/heads/staging'
+    environment:
+      name: staging
+      url: https://staging.family-office.com
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to staging Railway environment
+        run: |
+          npm install -g @railway/cli
+          railway up --environment staging --service api --detach
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_STAGING }}
+
+      - name: Notify Slack
+        if: always()
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "${{ job.status == 'success' && '✅' || '❌' }} Staging deploy ${{ job.status }}: ${{ github.sha }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

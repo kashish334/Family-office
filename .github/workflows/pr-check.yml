@@ -1,0 +1,56 @@
+# ════════════════════════════════════════════════════════════════
+#  .github/workflows/pr-check.yml
+#  Lightweight checks on every Pull Request
+#  Runs faster than the full CI pipeline
+# ════════════════════════════════════════════════════════════════
+
+name: PR Check
+
+on:
+  pull_request:
+    branches: [main, staging]
+
+jobs:
+  quick-checks:
+    name: "Quick Checks"
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── Secrets scan ────────────────────────────────────────────
+      - name: Scan for hardcoded secrets
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --only-verified
+
+      # ── Check .env not committed ─────────────────────────────────
+      - name: Verify .env not tracked
+        run: |
+          if git ls-files --error-unmatch .env 2>/dev/null; then
+            echo "❌ .env file is tracked by git! Remove it and add to .gitignore."
+            exit 1
+          fi
+          echo "✅ .env is not tracked"
+
+      # ── Dockerfile linting ───────────────────────────────────────
+      - name: Lint Dockerfiles
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: docker/backend/Dockerfile
+          ignore: DL3008,DL3009
+
+      - name: Lint Frontend Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: docker/frontend/Dockerfile
+          ignore: DL3016,DL3018
+
+      # ── PR title check ───────────────────────────────────────────
+      - name: Validate PR title (conventional commits)
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
