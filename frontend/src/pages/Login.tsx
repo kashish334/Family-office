@@ -36,7 +36,7 @@ export default function Login() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--cream)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
       <div style={{ textAlign: 'center', marginBottom: 32 }}>
-        <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 36, fontWeight: 500 }}>Family Office</div>
+        <div style={{ fontFamily: 'DM Serif Display', fontSize: 36, fontWeight: 500 }}>Family Office</div>
         <div style={{ color: 'var(--text-muted)', fontSize: 14, letterSpacing: '0.04em' }}>Premium Wealth Management</div>
       </div>
 

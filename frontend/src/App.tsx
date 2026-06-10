@@ -14,7 +14,7 @@ function ComingSoon({ title }: { title: string }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60vh', color: 'var(--text-muted)' }}>
       <div style={{ fontSize: 40, marginBottom: 16 }}>🚧</div>
-      <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 28, fontWeight: 500, marginBottom: 8, color: 'var(--text-primary)' }}>{title}</div>
+      <div style={{ fontFamily: 'DM Serif Display', fontSize: 28, fontWeight: 500, marginBottom: 8, color: 'var(--text-primary)' }}>{title}</div>
       <div style={{ fontSize: 14 }}>This page is coming soon.</div>
     </div>
   );

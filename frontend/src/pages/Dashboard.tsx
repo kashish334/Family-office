@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { api, DashboardData, Transaction } from '../services/api';
+import { api, DashboardData, Transaction, Budget } from '../services/api';
 import { getFamilyId } from '../services/api';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
-import { TrendingUp, TrendingDown, Plus } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { TrendingUp, TrendingDown, Plus, RefreshCw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -44,13 +44,17 @@ export default function Dashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [recentTx, setRecentTx] = useState<Transaction[]>([]);
+  const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [refreshKey, setRefreshKey] = useState(0);
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [recentTx, setRecentTx] = useState<Transaction[]>([]);
   const hasFam = !!getFamilyId();
 
   useEffect(() => {
     if (!hasFam) { setLoading(false); return; }
+    setLoading(true);
+    setError('');
     api.analytics.dashboard()
       .then(setData)
       .catch(e => setError(e.message))
@@ -58,11 +62,17 @@ export default function Dashboard() {
     api.transactions.list({ page: '1', per_page: '5' })
       .then(res => setRecentTx(res.items))
       .catch(() => {});
-  }, [hasFam]);
+    const now = new Date();
+    api.budgets.list(now.getFullYear(), now.getMonth() + 1)
+      .then(setBudgets)
+      .catch(() => {});
+  }, [hasFam, refreshKey]);
 
-  const totalIncome = data?.total_income ?? 0;
+  const totalIncome = Number(data?.total_income ?? 0);
+  const totalExpenses = Number(data?.total_expenses ?? 0);
+  const netSavings = Number(data?.net_savings ?? 0);
+  const savingsRate = Number(data?.savings_rate ?? 0);
 
-  // Normalize backend response fields to what the chart expects
   const chartData = (() => {
     const trends = (data as any)?.monthly_trends ?? data?.monthly_data ?? [];
     return trends.map((t: any) => ({
@@ -73,7 +83,6 @@ export default function Dashboard() {
   })();
 
   const topCategories = (() => {
-    // Build from recent transactions using merchant_name as category
     if (recentTx.length > 0) {
       const map: Record<string, number> = {};
       let total = 0;
@@ -83,13 +92,11 @@ export default function Dashboard() {
         total += Number(t.amount);
       });
       return Object.entries(map).map(([name, amount]) => ({
-        name,
-        amount,
+        name, amount,
         percentage: total > 0 ? Math.round((amount / total) * 100) : 0,
       })).sort((a, b) => b.amount - a.amount);
     }
-    const cats = (data as any)?.category_breakdown ?? [];
-    return cats.map((c: any) => ({
+    return ((data as any)?.category_breakdown ?? []).map((c: any) => ({
       name: c.category_name && c.category_name !== 'None' ? c.category_name : 'Uncategorized',
       amount: Number(c.total ?? 0),
       percentage: Number(c.percentage ?? 0),
@@ -97,9 +104,6 @@ export default function Dashboard() {
   })();
 
   const PIE_COLORS = ['#5c7a5e', '#8faa91', '#c9b99a', '#7a8fa6', '#a67a7a', '#7a9ca6'];
-  const totalExpenses = data?.total_expenses ?? 0;
-  const netSavings = data?.net_savings ?? 0;
-  const savingsRate = data?.savings_rate ?? 0;
 
   return (
     <div>
@@ -112,14 +116,17 @@ export default function Dashboard() {
             <button onClick={() => navigate('/transactions')} style={{ padding: '5px 12px', borderRadius: 6, border: 'none', background: 'transparent', color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer' }}>Analytics</button>
           </div>
         </div>
-        {user && <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Welcome, <strong>{user.full_name}</strong></div>}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button onClick={() => setRefreshKey(k => k + 1)}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--cream)', fontSize: 12, cursor: 'pointer', color: 'var(--text-secondary)' }}>
+            <RefreshCw size={12} /> Refresh
+          </button>
+          {user && <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Welcome, <strong>{user.full_name}</strong></div>}
+        </div>
       </div>
 
       <div style={{ padding: 24 }}>
-        {loading && (
-          <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)' }}>Loading your dashboard…</div>
-        )}
-
+        {loading && <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)' }}>Loading your dashboard…</div>}
         {!loading && error && (
           <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 12, padding: 24, marginBottom: 20, color: '#dc2626', fontSize: 13 }}>
             Failed to load dashboard: {error}
@@ -128,11 +135,10 @@ export default function Dashboard() {
 
         {!loading && !error && (
           <>
-            {/* Stats Row */}
             <div style={{ display: 'flex', gap: 16, marginBottom: 20 }}>
-              <StatCard label="Total Income" value={`₹${totalIncome.toLocaleString()}`} sub={totalIncome > 0 ? 'This period' : 'No income yet'} trend="up" />
-              <StatCard label="Total Expenses" value={`₹${totalExpenses.toLocaleString()}`} sub={totalExpenses > 0 ? 'This period' : 'No expenses yet'} trend="down" />
-              <StatCard label="Net Savings" value={`₹${netSavings.toLocaleString()}`} sub={netSavings >= 0 ? 'Positive balance' : 'Deficit'} trend={netSavings >= 0 ? 'up' : 'down'} />
+              <StatCard label="Total Income" value={`₹${totalIncome.toLocaleString('en-IN')}`} sub={totalIncome > 0 ? 'This period' : 'No income yet'} trend="up" />
+              <StatCard label="Total Expenses" value={`₹${totalExpenses.toLocaleString('en-IN')}`} sub={totalExpenses > 0 ? 'This period' : 'No expenses yet'} trend="down" />
+              <StatCard label="Net Savings" value={`₹${netSavings.toLocaleString('en-IN')}`} sub={netSavings >= 0 ? 'Positive balance' : 'Deficit'} trend={netSavings >= 0 ? 'up' : 'down'} />
               <StatCard label="Savings Rate" value={`${savingsRate.toFixed(1)}%`} sub="Of income saved" trend="up" />
             </div>
 
@@ -155,10 +161,10 @@ export default function Dashboard() {
                     <ResponsiveContainer width="100%" height={220}>
                       <AreaChart data={chartData}>
                         <XAxis dataKey="month" axisLine={false} tickLine={false} style={{ fontSize: 11 }} />
-                        <YAxis hide={false} axisLine={false} tickLine={false} style={{ fontSize: 11 }} tickFormatter={(v: any) => '₹' + Number(v).toLocaleString()} width={70} />
-                        <Tooltip formatter={(v: any) => `₹${Number(v).toLocaleString()}`} />
-                        <Area type="monotone" dataKey="income" stroke="var(--sage)" fill="#e8f0e9" strokeWidth={2} dot={{ r: 5, fill: "var(--sage)" }} activeDot={{ r: 7 }} />
-                        <Area type="monotone" dataKey="expenses" stroke="var(--gold)" fill="#f5edd8" strokeWidth={2} dot={{ r: 5, fill: "var(--gold)" }} activeDot={{ r: 7 }} />
+                        <YAxis axisLine={false} tickLine={false} style={{ fontSize: 11 }} tickFormatter={(v: any) => '₹' + Number(v).toLocaleString('en-IN')} width={80} />
+                        <Tooltip formatter={(v: any) => `₹${Number(v).toLocaleString('en-IN')}`} />
+                        <Area type="monotone" dataKey="income" stroke="var(--sage)" fill="#e8f0e9" strokeWidth={2} dot={{ r: 5, fill: 'var(--sage)' }} activeDot={{ r: 7 }} />
+                        <Area type="monotone" dataKey="expenses" stroke="var(--gold)" fill="#f5edd8" strokeWidth={2} dot={{ r: 5, fill: 'var(--gold)' }} activeDot={{ r: 7 }} />
                       </AreaChart>
                     </ResponsiveContainer>
                   ) : (
@@ -176,16 +182,16 @@ export default function Dashboard() {
                           <PieChart>
                             <Pie data={topCategories.slice(0, 6)} dataKey="amount" nameKey="name" cx="50%" cy="50%" outerRadius={70} innerRadius={30}>
                               {topCategories.slice(0, 6).map((_: any, i: number) => (
-                                <Cell key={i} fill={['#5c7a5e','#8faa91','#c9b99a','#7a8fa6','#a67a7a','#7a9ca6'][i % 6]} />
+                                <Cell key={i} fill={PIE_COLORS[i % 6]} />
                               ))}
                             </Pie>
-                            <Tooltip formatter={(v: any) => `₹${Number(v).toLocaleString()}`} />
+                            <Tooltip formatter={(v: any) => `₹${Number(v).toLocaleString('en-IN')}`} />
                           </PieChart>
                         </ResponsiveContainer>
                         {topCategories.slice(0, 6).map((cat: any, i: number) => (
                           <div key={cat.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, marginBottom: 4 }}>
                             <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <span style={{ width: 10, height: 10, borderRadius: '50%', background: ['#5c7a5e','#8faa91','#c9b99a','#7a8fa6','#a67a7a','#7a9ca6'][i % 6], display: 'inline-block' }} />
+                              <span style={{ width: 10, height: 10, borderRadius: '50%', background: PIE_COLORS[i % 6], display: 'inline-block' }} />
                               {cat.name}
                             </span>
                             <span style={{ fontWeight: 600 }}>{cat.percentage}%</span>
@@ -197,17 +203,25 @@ export default function Dashboard() {
 
                   <div style={{ background: 'var(--warm-white)', borderRadius: 12, padding: 20 }}>
                     <div style={{ fontWeight: 600, marginBottom: 16 }}>Budget Utilization</div>
-                    {data?.budget_utilization?.length ? data.budget_utilization.slice(0, 4).map(b => (
-                      <div key={b.name} style={{ marginBottom: 14 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
-                          <span>{b.name}</span>
-                          <span style={{ fontWeight: 600, color: b.percentage > 90 ? 'var(--red)' : 'var(--text-primary)' }}>{b.percentage.toFixed(0)}%</span>
+                    {budgets.length > 0 ? budgets.slice(0, 4).map((b: any) => {
+                      const limit = Number(b.limit_amount || b.monthly_limit || 0);
+                      const spent = Number(b.spent || b.spent_amount || 0);
+                      const pct = limit > 0 ? Math.min((spent / limit) * 100, 100) : 0;
+                      const catName = b.category?.name || b.category_name || 'Budget';
+                      return (
+                        <div key={b.id} style={{ marginBottom: 14 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
+                            <span>{catName}</span>
+                            <span style={{ fontWeight: 600, color: pct > 90 ? 'var(--red)' : 'var(--text-primary)' }}>
+                              ₹{spent.toLocaleString('en-IN')} / ₹{limit.toLocaleString('en-IN')}
+                            </span>
+                          </div>
+                          <div style={{ height: 6, background: 'var(--border)', borderRadius: 3, overflow: 'hidden' }}>
+                            <div style={{ height: '100%', width: `${pct}%`, background: pct > 90 ? 'var(--red)' : pct > 70 ? 'var(--gold)' : 'var(--sage)', borderRadius: 3 }} />
+                          </div>
                         </div>
-                        <div style={{ height: 6, background: 'var(--border)', borderRadius: 3, overflow: 'hidden' }}>
-                          <div style={{ height: '100%', width: `${Math.min(b.percentage, 100)}%`, background: b.percentage > 90 ? 'var(--red)' : b.percentage > 70 ? 'var(--gold)' : 'var(--sage)', borderRadius: 3 }} />
-                        </div>
-                      </div>
-                    )) : <EmptyState icon="💰" message="No budgets set yet." action="Set Budget" onAction={() => navigate('/budget')} />}
+                      );
+                    }) : <EmptyState icon="💰" message="No budgets set yet." action="Set Budget" onAction={() => navigate('/budget')} />}
                   </div>
                 </div>
 
@@ -224,11 +238,11 @@ export default function Dashboard() {
                       </div>
                       {recentTx.slice(0, 5).map((t: Transaction) => (
                         <div key={t.id} style={{ display: 'grid', gridTemplateColumns: '110px 1fr 130px 110px', gap: 12, padding: '12px 0', borderBottom: '1px solid var(--border-light)', fontSize: 13, alignItems: 'center' }}>
-                          <span style={{ color: 'var(--text-muted)' }}>{new Date(t.transaction_date || t.date).toLocaleDateString()}</span>
+                          <span style={{ color: 'var(--text-muted)' }}>{new Date((t as any).transaction_date || t.date).toLocaleDateString()}</span>
                           <span style={{ fontWeight: 500 }}>{t.description}</span>
                           <span><span style={{ background: catColors[t.category?.name || ''] || 'var(--cream)', padding: '2px 10px', borderRadius: 20, fontSize: 12 }}>{t.category?.name || (t as any).merchant_name || '—'}</span></span>
                           <span style={{ textAlign: 'right', fontWeight: 600, color: t.type === 'income' ? 'var(--success)' : 'var(--red)' }}>
-                            {t.type === 'income' ? '+' : '-'}${Math.abs(t.amount).toFixed(2)}
+                            {t.type === 'income' ? '+' : '-'}₹{Math.abs(Number(t.amount)).toLocaleString('en-IN')}
                           </span>
                         </div>
                       ))}
@@ -254,9 +268,9 @@ export default function Dashboard() {
                 <div style={{ background: 'var(--warm-white)', borderRadius: 12, padding: 20 }}>
                   <div style={{ fontWeight: 600, marginBottom: 16 }}>Financial Summary</div>
                   {[
-                    { label: 'Total Income', value: `₹${totalIncome.toLocaleString()}`, color: 'var(--sage)' },
-                    { label: 'Total Expenses', value: `₹${totalExpenses.toLocaleString()}`, color: 'var(--red)' },
-                    { label: 'Net Balance', value: `₹${netSavings.toLocaleString()}`, color: netSavings >= 0 ? 'var(--sage)' : 'var(--red)' },
+                    { label: 'Total Income', value: `₹${totalIncome.toLocaleString('en-IN')}`, color: 'var(--sage)' },
+                    { label: 'Total Expenses', value: `₹${totalExpenses.toLocaleString('en-IN')}`, color: 'var(--red)' },
+                    { label: 'Net Balance', value: `₹${netSavings.toLocaleString('en-IN')}`, color: netSavings >= 0 ? 'var(--sage)' : 'var(--red)' },
                     { label: 'Savings Rate', value: `${savingsRate.toFixed(1)}%`, color: 'var(--text-primary)' },
                   ].map(item => (
                     <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--border-light)', fontSize: 14 }}>
@@ -271,23 +285,19 @@ export default function Dashboard() {
                     <span>🤖</span><span style={{ fontWeight: 600 }}>AI Insights</span>
                   </div>
                   <p style={{ fontSize: 13, color: '#ccc', lineHeight: 1.6, marginBottom: 12 }}>
-                    {totalIncome > 0
-                      ? 'Your financial data is ready for AI analysis. Ask me anything about your spending patterns.'
-                      : 'Add transactions to receive personalized AI insights about your finances.'}
+                    {totalIncome > 0 ? 'Your financial data is ready for AI analysis. Ask me anything about your spending patterns.' : 'Add transactions to receive personalized AI insights about your finances.'}
                   </p>
                   <button onClick={() => navigate('/ai')} style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 8, color: 'white', fontSize: 13, cursor: 'pointer' }}>
                     Open AI Advisor →
                   </button>
                 </div>
 
-                {recentTx.length > 0 && (
-                  <div style={{ background: 'var(--warm-white)', borderRadius: 12, padding: 20 }}>
-                    <div style={{ fontWeight: 600, marginBottom: 12 }}>Savings Goals</div>
-                    <button onClick={() => navigate('/savings')} style={{ width: '100%', padding: '10px', background: 'var(--cream)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer' }}>
-                      Manage Goals →
-                    </button>
-                  </div>
-                )}
+                <div style={{ background: 'var(--warm-white)', borderRadius: 12, padding: 20 }}>
+                  <div style={{ fontWeight: 600, marginBottom: 12 }}>Savings Goals</div>
+                  <button onClick={() => navigate('/savings')} style={{ width: '100%', padding: '10px', background: 'var(--cream)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer' }}>
+                    Manage Goals →
+                  </button>
+                </div>
               </div>
             </div>
           </>

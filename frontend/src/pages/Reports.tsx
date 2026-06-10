@@ -20,7 +20,7 @@ export default function Reports() {
       <div style={{ padding: 24 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
           <div>
-            <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 36, fontWeight: 500 }}>Intelligence & Reports</h1>
+            <h1 style={{ fontFamily: 'DM Serif Display', fontSize: 36, fontWeight: 500 }}>Intelligence & Reports</h1>
             <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>Comprehensive overview of your wealth velocity and fiscal trajectory.</p>
           </div>
           <div style={{ display: 'flex', gap: 12 }}>
@@ -40,7 +40,7 @@ export default function Reports() {
           <div style={{ background: 'var(--warm-white)', borderRadius: 12, padding: 24 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
               <div>
-                <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 20, fontWeight: 600 }}>Financial Health</div>
+                <div style={{ fontFamily: 'DM Serif Display', fontSize: 20, fontWeight: 600 }}>Financial Health</div>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Real-time vitality score</div>
               </div>
               <span style={{ background: '#e8f0e9', color: 'var(--sage)', padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>+2.4% vs last mo</span>

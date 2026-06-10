@@ -21,7 +21,7 @@ export default function Expenses() {
     <div>
       <Navbar title="Financial Analysis" tabs={[{ label: 'Overview', path: '/dashboard' }, { label: 'Analytics', path: '/transactions' }]} activeTab="Analytics" />
       <div style={{ padding: 24 }}>
-        <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 32, fontWeight: 500, marginBottom: 6 }}>Deep Expense Analytics</h1>
+        <h1 style={{ fontFamily: 'DM Serif Display', fontSize: 32, fontWeight: 500, marginBottom: 6 }}>Deep Expense Analytics</h1>
         <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginBottom: 24 }}>Visualizing your family office capital flow and spending patterns.</p>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: 20, marginBottom: 20 }}>
@@ -120,7 +120,7 @@ export default function Expenses() {
               <div style={{ width: 44, height: 44, borderRadius: 10, background: '#e8f0e9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>{s.icon}</div>
               <div>
                 <div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>{s.label}</div>
-                <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 26, fontWeight: 600 }}>{s.value}</div>
+                <div style={{ fontFamily: 'DM Serif Display', fontSize: 26, fontWeight: 600 }}>{s.value}</div>
               </div>
             </div>
           ))}

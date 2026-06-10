@@ -44,7 +44,7 @@ export default function AIAdvisor() {
       <Navbar title="AI Advisor" />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 24, overflow: 'hidden' }}>
         <div style={{ marginBottom: 16 }}>
-          <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 32, fontWeight: 500 }}>AI Financial Advisor</h1>
+          <h1 style={{ fontFamily: 'DM Serif Display', fontSize: 32, fontWeight: 500 }}>AI Financial Advisor</h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>Personalized insights powered by your real financial data</p>
         </div>
 

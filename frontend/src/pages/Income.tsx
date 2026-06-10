@@ -11,7 +11,7 @@ export default function Income() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
           <div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Wealth Flow</div>
-            <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 36, fontWeight: 500 }}>Income Management</h1>
+            <h1 style={{ fontFamily: 'DM Serif Display', fontSize: 36, fontWeight: 500 }}>Income Management</h1>
           </div>
           <button style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', background: 'var(--sage)', border: 'none', borderRadius: 8, color: 'white', fontSize: 13, fontWeight: 500 }}>
             <Plus size={14} /> Add Income Source
@@ -30,7 +30,7 @@ export default function Income() {
                 <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{s.label}</div>
                 {s.sub && <span style={{ fontSize: 12, fontWeight: 600, color: s.sub === 'Steady' ? 'var(--gold)' : 'var(--sage)' }}>{s.sub}</span>}
               </div>
-              <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 30, fontWeight: 500, marginBottom: 6 }}>{s.value}</div>
+              <div style={{ fontFamily: 'DM Serif Display', fontSize: 30, fontWeight: 500, marginBottom: 6 }}>{s.value}</div>
               <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{s.note}</div>
             </div>
           ))}

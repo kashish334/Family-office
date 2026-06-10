@@ -98,7 +98,7 @@ export default function SavingsGoals() {
       <div style={{ padding: 24 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
           <div>
-            <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 32, fontWeight: 500 }}>Savings Goals</h1>
+            <h1 style={{ fontFamily: 'DM Serif Display', fontSize: 32, fontWeight: 500 }}>Savings Goals</h1>
             <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 4 }}>Track your financial milestones</p>
           </div>
           <button onClick={openAdd} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 16px', background: 'var(--sage)', border: 'none', borderRadius: 8, fontSize: 13, color: 'white', fontWeight: 500, cursor: 'pointer' }}>
@@ -155,11 +155,11 @@ export default function SavingsGoals() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
                     <div>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>Saved</div>
-                      <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 22, fontWeight: 500 }}>₹{Number(goal.current_amount).toLocaleString('en-IN')}</div>
+                      <div style={{ fontFamily: 'DM Serif Display', fontSize: 22, fontWeight: 500 }}>₹{Number(goal.current_amount).toLocaleString('en-IN')}</div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>Target</div>
-                      <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 22, fontWeight: 500 }}>₹{Number(goal.target_amount).toLocaleString('en-IN')}</div>
+                      <div style={{ fontFamily: 'DM Serif Display', fontSize: 22, fontWeight: 500 }}>₹{Number(goal.target_amount).toLocaleString('en-IN')}</div>
                     </div>
                   </div>
 

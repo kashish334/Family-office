@@ -106,10 +106,11 @@ export const api = {
   },
 
   budgets: {
-    list: () => request<Budget[]>(`/api/v1/families/${fid()}/budgets/`),
+    list: (year?: number, month?: number) =>
+      request<Budget[]>(`/api/v1/families/${fid()}/budgets/${year && month ? '?year=' + year + '&month=' + month : ''}`),
     create: (data: any) =>
       request<Budget>(`/api/v1/families/${fid()}/budgets/`, {
-        method: 'POST', body: JSON.stringify(data),
+        method: 'PUT', body: JSON.stringify(data),
       }),
   },
 

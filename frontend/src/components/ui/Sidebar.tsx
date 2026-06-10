@@ -60,7 +60,7 @@ export default function Sidebar() {
       flexShrink: 0, minHeight: '100vh',
     }}>
       <div style={{ padding: '20px 20px 16px', borderBottom: '1px solid var(--border)' }}>
-        <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 20, fontWeight: 500 }}>Family Office</div>
+        <div style={{ fontFamily: 'DM Serif Display', fontSize: 20, fontWeight: 500 }}>Family Office</div>
         <div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 2 }}>Premium Wealth Management</div>
       </div>
 

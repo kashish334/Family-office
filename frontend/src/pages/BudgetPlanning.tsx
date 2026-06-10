@@ -4,15 +4,24 @@ import { api, Budget, Category } from '../services/api';
 import { Plus, X } from 'lucide-react';
 
 const CATEGORIES: Category[] = [
-  { id: 'expense-grocery', name: 'Grocery', type: 'expense' },
-  { id: 'expense-transport', name: 'Transport', type: 'expense' },
-  { id: 'expense-food', name: 'Food', type: 'expense' },
-  { id: 'expense-medical', name: 'Medical', type: 'expense' },
-  { id: 'expense-entertainment', name: 'Entertainment', type: 'expense' },
-  { id: 'expense-travel', name: 'Travel', type: 'expense' },
-  { id: 'expense-shopping', name: 'Shopping', type: 'expense' },
-  { id: 'expense-utilities', name: 'Utilities', type: 'expense' },
-  { id: 'expense-other', name: 'Other Expense', type: 'expense' },
+  { id: '3875194e-65d4-41b4-9f79-3fece6939adf', name: 'Education', type: 'expense' },
+  { id: '24dc12c8-465f-4234-8707-d41f828f4c6e', name: 'Entertainment', type: 'expense' },
+  { id: '589622bd-2447-4a22-b232-6db4e21579bd', name: 'Food & Dining', type: 'expense' },
+  { id: '0fb5e64b-3b91-411e-9fa0-2a3772075fa8', name: 'Healthcare', type: 'expense' },
+  { id: 'f9ed6e71-6d2a-4384-adff-1ca63b6b6e83', name: 'Housing', type: 'expense' },
+  { id: '9066c449-e73b-4c94-8a6d-5b601ca57088', name: 'Insurance', type: 'expense' },
+  { id: '7d6209ac-aeb7-40f4-9db9-d0315b1664ea', name: 'Memberships', type: 'expense' },
+  { id: '69bd7f76-5b6c-4a32-be7e-48e43fed1dba', name: 'Philanthropy', type: 'expense' },
+  { id: 'a64ade11-5b5b-4bac-a0a0-a56f4f373eae', name: 'Shopping', type: 'expense' },
+  { id: '5c739ee7-a624-4407-92c1-a2300968d975', name: 'Staff & Services', type: 'expense' },
+  { id: '91fc0c66-020b-4159-bda1-6fc70456702d', name: 'Transport', type: 'expense' },
+  { id: '320264e1-36f3-453e-9a85-6c6b56c7d712', name: 'Travel', type: 'expense' },
+  { id: 'dcffcf2f-9dec-45eb-a674-2c2b36fe7518', name: 'Utilities', type: 'expense' },
+  { id: '0b03561f-a958-4d2b-9829-86ca43f989ab', name: 'Business Income', type: 'income' },
+  { id: 'fe1b64f8-4bb7-4fe8-9d6b-9e2d117169cd', name: 'Dividends', type: 'income' },
+  { id: 'ccd6f852-7eec-4403-ba1b-21bb0934f0c1', name: 'Interest', type: 'income' },
+  { id: '688e6f42-f862-4ebb-b32c-172034951439', name: 'Rental Income', type: 'income' },
+  { id: '7503d0de-789b-400b-a85b-79e671c90ec6', name: 'Salary & Bonus', type: 'income' },
 ];
 
 export default function BudgetPlanning() {
@@ -25,7 +34,8 @@ export default function BudgetPlanning() {
 
   const load = () => {
     setLoading(true);
-    api.budgets.list()
+    const now = new Date();
+    api.budgets.list(now.getFullYear(), now.getMonth() + 1)
       .then(setBudgets)
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
@@ -38,12 +48,11 @@ export default function BudgetPlanning() {
     setSaving(true); setError('');
     try {
       // Find category name from hardcoded list
-      const cat = CATEGORIES.find(c => c.id === form.category_id);
       await api.budgets.create({
-        monthly_limit: parseFloat(form.monthly_limit),
+        category_id: form.category_id,
+        limit_amount: parseFloat(form.monthly_limit),
         month: form.month,
         year: form.year,
-        category_name: cat?.name,
       });
       setShowModal(false);
       setForm({ category_id: '', monthly_limit: '', month: new Date().getMonth() + 1, year: new Date().getFullYear() });
@@ -54,7 +63,7 @@ export default function BudgetPlanning() {
 
   const inp = { width: '100%', padding: '9px 12px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--cream)', fontSize: 13, outline: 'none', color: 'var(--text-primary)', boxSizing: 'border-box' as const };
 
-  const totalBudget = budgets.reduce((s, b) => s + b.monthly_limit, 0);
+  const totalBudget = budgets.reduce((s, b) => s + (b.monthly_limit || (b as any).limit_amount || 0), 0);
   const totalSpent = budgets.reduce((s, b) => s + (b.spent || 0), 0);
 
   return (
@@ -106,13 +115,14 @@ export default function BudgetPlanning() {
               <span>Category</span><span>Limit</span><span>Spent</span><span>Remaining</span><span>Progress</span>
             </div>
             {budgets.map(b => {
-              const pct = b.monthly_limit > 0 ? Math.min(((b.spent || 0) / b.monthly_limit) * 100, 100) : 0;
-              const remaining = b.monthly_limit - (b.spent || 0);
-              const catName = b.category?.name || (b as any).category_name || '—';
+              const pct = ((b as any).limit_amount || b.monthly_limit || 0) > 0 ? Math.min(((b.spent || (b as any).spent_amount || 0) / ((b as any).limit_amount || b.monthly_limit || 1)) * 100, 100) : 0;
+              const remaining = ((b as any).limit_amount || b.monthly_limit || 0) - (b.spent || (b as any).spent_amount || 0);
+              const catInfo = CATEGORIES.find(c => c.id === String(b.category_id));
+              const catName = b.category?.name || catInfo?.name || (b as any).category_name || '—';
               return (
                 <div key={b.id} style={{ display: 'grid', gridTemplateColumns: '1fr 120px 120px 120px 180px', gap: 16, padding: '18px 24px', borderBottom: '1px solid var(--border-light)', alignItems: 'center' }}>
                   <span style={{ fontWeight: 500 }}>{catName}</span>
-                  <span>₹{b.monthly_limit.toLocaleString('en-IN')}</span>
+                  <span>₹{((b as any).limit_amount || b.monthly_limit || 0).toLocaleString('en-IN')}</span>
                   <span style={{ color: pct > 90 ? 'var(--red)' : 'var(--text-primary)' }}>₹{(b.spent || 0).toLocaleString('en-IN')}</span>
                   <span style={{ color: remaining < 0 ? 'var(--red)' : 'var(--sage)', fontWeight: 500 }}>₹{remaining.toLocaleString('en-IN')}</span>
                   <div>

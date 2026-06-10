@@ -158,7 +158,7 @@ export default function Transactions({ defaultType }: Props) {
       <div style={{ padding: 24 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
           <div>
-            <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 32, fontWeight: 500 }}>Recent Activity</h1>
+            <h1 style={{ fontFamily: 'DM Serif Display', fontSize: 32, fontWeight: 500 }}>Recent Activity</h1>
             <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 4 }}>{title} — {total} records total</p>
           </div>
           <button style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 16px', background: 'var(--warm-white)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, color: 'var(--text-secondary)', cursor: 'pointer' }}>

@@ -12,7 +12,7 @@ export function Members() {
       <Navbar title="Family Members" />
       <div style={{ padding: 24 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24 }}>
-          <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 32, fontWeight: 500 }}>Family Members</h1>
+          <h1 style={{ fontFamily: 'DM Serif Display', fontSize: 32, fontWeight: 500 }}>Family Members</h1>
           <button style={{ padding: '10px 20px', background: 'var(--sage)', border: 'none', borderRadius: 8, color: 'white', fontSize: 13, fontWeight: 500 }}>+ Invite Member</button>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
@@ -45,7 +45,7 @@ export function Bills() {
       <Navbar title="Bills & Reminders" />
       <div style={{ padding: 24 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24 }}>
-          <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 32, fontWeight: 500 }}>Bills & Reminders</h1>
+          <h1 style={{ fontFamily: 'DM Serif Display', fontSize: 32, fontWeight: 500 }}>Bills & Reminders</h1>
           <button style={{ padding: '10px 20px', background: 'var(--sage)', border: 'none', borderRadius: 8, color: 'white', fontSize: 13, fontWeight: 500 }}>+ Add Bill</button>
         </div>
         <div style={{ background: 'var(--warm-white)', borderRadius: 12, overflow: 'hidden' }}>
@@ -76,7 +76,7 @@ export function Settings() {
     <div>
       <Navbar title="Settings" />
       <div style={{ padding: 24, maxWidth: 700 }}>
-        <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 32, fontWeight: 500, marginBottom: 24 }}>Account Settings</h1>
+        <h1 style={{ fontFamily: 'DM Serif Display', fontSize: 32, fontWeight: 500, marginBottom: 24 }}>Account Settings</h1>
         {[
           { section: 'Profile', fields: [{ label: 'Full Name', value: 'Julian Sterling' }, { label: 'Email', value: 'julian@sterling.com' }, { label: 'Phone', value: '+1 (415) 555-0100' }] },
           { section: 'Security', fields: [{ label: 'Password', value: '••••••••••••' }, { label: 'Two-Factor Auth', value: 'Enabled' }] },
@@ -103,8 +103,8 @@ export function Settings() {
 export function NotFound() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--cream)', textAlign: 'center' }}>
-      <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 80, fontWeight: 300, color: 'var(--sage)', lineHeight: 1 }}>404</div>
-      <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 28, fontWeight: 500, marginBottom: 12 }}>Page Not Found</h2>
+      <div style={{ fontFamily: 'DM Serif Display', fontSize: 80, fontWeight: 300, color: 'var(--sage)', lineHeight: 1 }}>404</div>
+      <h2 style={{ fontFamily: 'DM Serif Display', fontSize: 28, fontWeight: 500, marginBottom: 12 }}>Page Not Found</h2>
       <p style={{ color: 'var(--text-secondary)', marginBottom: 24 }}>The page you're looking for doesn't exist.</p>
       <a href="/dashboard" style={{ padding: '12px 24px', background: 'var(--sage)', color: 'white', borderRadius: 8, fontSize: 14, fontWeight: 500 }}>Return to Dashboard</a>
     </div>

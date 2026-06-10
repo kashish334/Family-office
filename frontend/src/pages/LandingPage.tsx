@@ -19,7 +19,7 @@ export default function LandingPage() {
     <div style={{ background: 'var(--warm-white)', minHeight: '100vh', fontFamily: 'DM Sans, sans-serif' }}>
       {/* Nav */}
       <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 48px', borderBottom: '1px solid var(--border)', background: 'var(--warm-white)', position: 'sticky', top: 0, zIndex: 100 }}>
-        <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 20, fontWeight: 600 }}>Family Office</div>
+        <div style={{ fontFamily: 'DM Serif Display', fontSize: 20, fontWeight: 600 }}>Family Office</div>
         <div style={{ display: 'flex', gap: 28 }}>
           {['Overview', 'Analytics', 'Pricing'].map(l => (
             <a key={l} href="#" style={{ fontSize: 14, color: 'var(--text-secondary)', fontWeight: l === 'Overview' ? 500 : 400 }}>{l}</a>
@@ -35,7 +35,7 @@ export default function LandingPage() {
       <section style={{ padding: '72px 48px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60, alignItems: 'center', maxWidth: 1100, margin: '0 auto' }}>
         <div>
           <div style={{ display: 'inline-block', background: '#e8f0e9', color: 'var(--sage)', fontSize: 11, fontWeight: 600, padding: '4px 12px', borderRadius: 20, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 24 }}>The New Standard of Wealth</div>
-          <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 52, fontWeight: 500, lineHeight: 1.1, marginBottom: 20 }}>Manage Your Family Finances with AI-Powered Insights</h1>
+          <h1 style={{ fontFamily: 'DM Serif Display', fontSize: 52, fontWeight: 500, lineHeight: 1.1, marginBottom: 20 }}>Manage Your Family Finances with AI-Powered Insights</h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: 16, lineHeight: 1.7, marginBottom: 32 }}>The elegant way to secure your family's financial future. Experience professional-grade wealth management tailored for the modern home.</p>
           <div style={{ display: 'flex', gap: 12 }}>
             <button onClick={() => navigate('/login')} style={{ padding: '12px 24px', background: 'var(--sage)', color: 'white', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 500 }}>Get Started</button>
@@ -47,7 +47,7 @@ export default function LandingPage() {
         <div style={{ position: 'relative' }}>
           <div style={{ background: 'var(--charcoal)', borderRadius: 16, padding: 20, color: 'white' }}>
             <div style={{ fontSize: 12, color: '#aaa', marginBottom: 4 }}>Total Balance</div>
-            <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 32, fontWeight: 500 }}>$142,400.00</div>
+            <div style={{ fontFamily: 'DM Serif Display', fontSize: 32, fontWeight: 500 }}>$142,400.00</div>
             <div style={{ marginTop: 12, fontSize: 12, color: '#aaa' }}>Monthly Savings: $4,250.00</div>
           </div>
           <div style={{ background: 'white', borderRadius: 12, padding: 16, marginTop: 12, boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
@@ -70,7 +70,7 @@ export default function LandingPage() {
 
       {/* Features */}
       <section style={{ padding: '72px 48px', background: 'var(--cream)', textAlign: 'center' }}>
-        <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 38, fontWeight: 500, marginBottom: 12 }}>Sophisticated Tools for Modern Families</h2>
+        <h2 style={{ fontFamily: 'DM Serif Display', fontSize: 38, fontWeight: 500, marginBottom: 12 }}>Sophisticated Tools for Modern Families</h2>
         <p style={{ color: 'var(--text-secondary)', fontSize: 15, maxWidth: 460, margin: '0 auto 48px' }}>Our features are designed to handle the complexity of family wealth while maintaining the simplicity of a personal app.</p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 24, maxWidth: 900, margin: '0 auto' }}>
           {features.map(({ icon: Icon, title, desc }) => (
@@ -88,7 +88,7 @@ export default function LandingPage() {
       {/* Intelligence Section */}
       <section style={{ background: 'var(--charcoal)', padding: '72px 48px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60, alignItems: 'center', maxWidth: '100%' }}>
         <div style={{ color: 'white' }}>
-          <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 40, fontWeight: 400, marginBottom: 16 }}>Intelligence that works for you.</h2>
+          <h2 style={{ fontFamily: 'DM Serif Display', fontSize: 40, fontWeight: 400, marginBottom: 16 }}>Intelligence that works for you.</h2>
           <p style={{ color: '#aaa', fontSize: 15, lineHeight: 1.7, marginBottom: 24 }}>Stop wondering where the money went. Family Office provides actionable advice based on your real-world behavior.</p>
           {['Weekly spending summaries via secure push', 'Predictive forecasting for the next quarter'].map(t => (
             <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#ccc', fontSize: 14, marginBottom: 10 }}>
@@ -118,12 +118,12 @@ export default function LandingPage() {
 
       {/* Growth Chart */}
       <section style={{ padding: '72px 48px', textAlign: 'center' }}>
-        <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 38, fontWeight: 500, marginBottom: 8 }}>Watch Your Future Grow</h2>
+        <h2 style={{ fontFamily: 'DM Serif Display', fontSize: 38, fontWeight: 500, marginBottom: 8 }}>Watch Your Future Grow</h2>
         <p style={{ color: 'var(--text-secondary)', marginBottom: 40 }}>Visualize your path to financial freedom with our intuitive analytics engine.</p>
         <div style={{ background: 'white', borderRadius: 16, padding: 24, maxWidth: 800, margin: '0 auto' }}>
           <div style={{ textAlign: 'left', marginBottom: 16 }}>
             <div style={{ fontSize: 12, color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Savings Growth</div>
-            <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 32 }}>$248,500.00</div>
+            <div style={{ fontFamily: 'DM Serif Display', fontSize: 32 }}>$248,500.00</div>
           </div>
           <ResponsiveContainer width="100%" height={200}>
             <AreaChart data={growthData}>
@@ -138,7 +138,7 @@ export default function LandingPage() {
 
       {/* Testimonials */}
       <section style={{ padding: '72px 48px', background: 'var(--cream)' }}>
-        <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 38, fontWeight: 500, marginBottom: 40 }}>Trusted by Families Who Value Precision.</h2>
+        <h2 style={{ fontFamily: 'DM Serif Display', fontSize: 38, fontWeight: 500, marginBottom: 40 }}>Trusted by Families Who Value Precision.</h2>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, maxWidth: 800 }}>
           {[
             { q: "Finally a budget app that feels like it belongs in a boardroom. We've managed to cut our household waste by 12% in the first quarter alone.", name: 'The Andersons, Palo Alto' },
@@ -154,7 +154,7 @@ export default function LandingPage() {
 
       {/* CTA */}
       <section style={{ padding: '72px 48px', textAlign: 'center', background: 'var(--cream-dark)' }}>
-        <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 42, fontWeight: 500, marginBottom: 16 }}>Secure Your Family's Legacy</h2>
+        <h2 style={{ fontFamily: 'DM Serif Display', fontSize: 42, fontWeight: 500, marginBottom: 16 }}>Secure Your Family's Legacy</h2>
         <p style={{ color: 'var(--text-secondary)', marginBottom: 32 }}>Join over 50,000 premium families managing their wealth with the highest standard of elegance and security.</p>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
           <button onClick={() => navigate('/login')} style={{ padding: '14px 28px', background: 'var(--sage)', color: 'white', border: 'none', borderRadius: 8, fontSize: 15, fontWeight: 500 }}>Get Started for Free</button>
@@ -165,7 +165,7 @@ export default function LandingPage() {
       {/* Footer */}
       <footer style={{ padding: '24px 48px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13, color: 'var(--text-muted)' }}>
         <div>
-          <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 16, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>Family Office</div>
+          <div style={{ fontFamily: 'DM Serif Display', fontSize: 16, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>Family Office</div>
           <div>© 2024 Family Office Premium Fintech. All rights reserved.</div>
         </div>
         <div style={{ display: 'flex', gap: 20 }}>
