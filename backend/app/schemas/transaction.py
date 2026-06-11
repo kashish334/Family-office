@@ -1,4 +1,8 @@
-"""schemas/transaction.py"""
+# backend/app/schemas/transaction.py
+# CHANGED: Added CategoryInfo nested schema and `category` field to
+#          TransactionResponse so the frontend receives t.category.name
+#          properly instead of having to fall back to merchant_name.
+
 import uuid
 from datetime import datetime
 from decimal import Decimal
@@ -7,10 +11,18 @@ from pydantic import BaseModel, Field, field_validator
 from app.models.transaction import TransactionType, TransactionStatus
 
 
+# ── CHANGED: new nested schema for the category relationship ─────────────────
+class CategoryInfo(BaseModel):
+    id: uuid.UUID
+    name: str
+    model_config = {"from_attributes": True}
+# ─────────────────────────────────────────────────────────────────────────────
+
+
 class TransactionCreate(BaseModel):
     type: TransactionType
     amount: Decimal = Field(..., gt=0, decimal_places=2)
-    currency: str = Field(default="USD", min_length=3, max_length=3)
+    currency: str = Field(default="INR", min_length=3, max_length=3)
     description: str = Field(..., min_length=1, max_length=500)
     notes: str | None = None
     category_id: uuid.UUID | None = None
@@ -40,6 +52,9 @@ class TransactionResponse(BaseModel):
     family_id: uuid.UUID
     user_id: uuid.UUID | None
     category_id: uuid.UUID | None
+    # ── CHANGED: expose the nested category object ────────────────────────
+    category: CategoryInfo | None = None
+    # ─────────────────────────────────────────────────────────────────────
     type: TransactionType
     status: TransactionStatus
     amount: Decimal

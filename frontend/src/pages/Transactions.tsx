@@ -1,3 +1,11 @@
+// frontend/src/pages/Transactions.tsx
+// CHANGED:
+//  1. Removed hardcoded CATEGORIES with fake IDs. Now fetches real categories
+//     from the API (GET /api/v1/categories/) on mount so IDs are real DB UUIDs.
+//  2. create() now sends category_id (real UUID) instead of omitting it.
+//  3. update() now sends category_id instead of stuffing the name in merchant_name.
+//  4. openEdit() pre-fills category_id from the transaction so it shows correctly.
+
 import { useEffect, useState } from 'react';
 import { api, Transaction, Category } from '../services/api';
 import { Download, Plus, ChevronLeft, ChevronRight, X, Pencil } from 'lucide-react';
@@ -7,24 +15,6 @@ const catColors: Record<string, string> = {
   Entertainment: '#f5e8e8', Income: '#d8f0e8', Food: '#f0ede8',
   Medical: '#f5e8e8', Travel: '#e8eaf5', Shopping: '#f5f0e8',
 };
-
-const CATEGORIES: Category[] = [
-  { id: 'income-salary', name: 'Salary', type: 'income' },
-  { id: 'income-freelance', name: 'Freelance', type: 'income' },
-  { id: 'income-investment', name: 'Investment Returns', type: 'income' },
-  { id: 'income-rental', name: 'Rental Income', type: 'income' },
-  { id: 'income-business', name: 'Business Income', type: 'income' },
-  { id: 'income-other', name: 'Other Income', type: 'income' },
-  { id: 'expense-grocery', name: 'Grocery', type: 'expense' },
-  { id: 'expense-transport', name: 'Transport', type: 'expense' },
-  { id: 'expense-food', name: 'Food', type: 'expense' },
-  { id: 'expense-medical', name: 'Medical', type: 'expense' },
-  { id: 'expense-entertainment', name: 'Entertainment', type: 'expense' },
-  { id: 'expense-travel', name: 'Travel', type: 'expense' },
-  { id: 'expense-shopping', name: 'Shopping', type: 'expense' },
-  { id: 'expense-utilities', name: 'Utilities', type: 'expense' },
-  { id: 'expense-other', name: 'Other Expense', type: 'expense' },
-];
 
 interface Props { defaultType?: 'income' | 'expense'; }
 
@@ -48,8 +38,17 @@ export default function Transactions({ defaultType }: Props) {
   const [form, setForm] = useState(freshForm(defaultType));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const perPage = 10;
 
+  // ── CHANGED: real categories fetched from API ─────────────────────────────
+  const [categories, setCategories] = useState<Category[]>([]);
+  useEffect(() => {
+    api.categories.list()
+      .then(setCategories)
+      .catch(() => {}); // non-fatal — category dropdown just stays empty
+  }, []);
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const perPage = 10;
   const title = defaultType === 'income' ? 'Income' : defaultType === 'expense' ? 'Expenses' : 'Transactions';
 
   useEffect(() => {
@@ -83,7 +82,9 @@ export default function Transactions({ defaultType }: Props) {
       description: t.description,
       amount: String(t.amount),
       type: t.type,
-      category_id: '',
+      // ── CHANGED: pre-fill the real category_id from the transaction ────
+      category_id: t.category_id || '',
+      // ──────────────────────────────────────────────────────────────────
       transaction_date: (t.transaction_date || t.date || '').split('T')[0],
       notes: t.notes || '',
     });
@@ -96,23 +97,27 @@ export default function Transactions({ defaultType }: Props) {
     setSaving(true); setError('');
     try {
       if (editingId) {
-        const selectedCat2 = CATEGORIES.find(c => c.id === form.category_id);
+        // ── CHANGED: send category_id (real UUID) not merchant_name ────────
         await api.transactions.update(editingId, {
           description: form.description,
           amount: parseFloat(form.amount),
           transaction_date: new Date(form.transaction_date).toISOString(),
           notes: form.notes ? form.notes : undefined,
-          merchant_name: selectedCat2 ? selectedCat2.name : undefined,
+          category_id: form.category_id || null,
         });
+        // ───────────────────────────────────────────────────────────────────
       } else {
+        // ── CHANGED: send category_id on create ────────────────────────────
         await api.transactions.create({
           description: form.description,
           amount: parseFloat(form.amount),
           type: form.type as 'income' | 'expense',
           transaction_date: new Date(form.transaction_date).toISOString(),
           notes: form.notes || undefined,
-          currency: 'USD',
+          currency: 'INR',
+          category_id: form.category_id || null,
         });
+        // ───────────────────────────────────────────────────────────────────
       }
       setShowModal(false);
       setEditingId(null);
@@ -131,6 +136,10 @@ export default function Transactions({ defaultType }: Props) {
     borderRadius: 8, background: 'var(--cream)', fontSize: 13, outline: 'none',
     color: 'var(--text-primary)', boxSizing: 'border-box' as const,
   };
+
+  // ── CHANGED: filter categories by current form type using real API data ───
+  const filteredCategories = categories.filter(c => c.type === form.type);
+  // ─────────────────────────────────────────────────────────────────────────
 
   return (
     <div>
@@ -197,10 +206,10 @@ export default function Transactions({ defaultType }: Props) {
                 {t.notes && <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{t.notes}</div>}
               </div>
               <span style={{ background: catColors[t.category?.name || ''] || 'var(--cream)', padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 500 }}>
-                {t.category?.name || t.merchant_name || '—'}
+                {t.category?.name || '—'}
               </span>
               <span style={{ textAlign: 'right', fontWeight: 600, fontSize: 14, color: t.type === 'income' ? 'var(--success)' : 'var(--red)' }}>
-                {t.type === 'income' ? '+' : '-'}₹{Math.abs(t.amount).toFixed(2)}
+                {t.type === 'income' ? '+' : '-'}₹{Math.abs(Number(t.amount)).toLocaleString('en-IN')}
               </span>
               <button onClick={() => openEdit(t)}
                 style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 6, padding: '5px 7px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
@@ -250,7 +259,6 @@ export default function Transactions({ defaultType }: Props) {
 
             {error && <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#dc2626' }}>{error}</div>}
 
-            {/* Type toggle — only for new entries on /transactions page */}
             {!editingId && !defaultType && (
               <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
                 {['expense', 'income'].map(t => (
@@ -262,7 +270,6 @@ export default function Transactions({ defaultType }: Props) {
               </div>
             )}
 
-            {/* Locked type badge */}
             {(defaultType || editingId) && (
               <div style={{ marginBottom: 20, padding: '8px 14px', background: form.type === 'income' ? '#d8f0e8' : '#fef2f2', borderRadius: 8, fontSize: 13, fontWeight: 500, color: form.type === 'income' ? '#2d6a4f' : '#dc2626', display: 'inline-block' }}>
                 {form.type === 'income' ? '↑ Income Entry' : '↓ Expense Entry'}
@@ -286,14 +293,16 @@ export default function Transactions({ defaultType }: Props) {
               </div>
             </div>
 
+            {/* ── CHANGED: category dropdown uses real API categories ─────── */}
             <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>Category (optional)</label>
             <select style={{ ...inp, marginBottom: 16 }} value={form.category_id}
               onChange={e => setForm(f => ({ ...f, category_id: e.target.value }))}>
               <option value="">Select category…</option>
-              {CATEGORIES.filter(c => c.type === form.type).map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
+              {filteredCategories.map(c => (
+                <option key={c.id} value={c.id}>{c.icon ? `${c.icon} ${c.name}` : c.name}</option>
               ))}
             </select>
+            {/* ─────────────────────────────────────────────────────────────── */}
 
             <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>Notes (optional)</label>
             <input style={{ ...inp, marginBottom: 24 }} placeholder="Any additional notes…" value={form.notes}

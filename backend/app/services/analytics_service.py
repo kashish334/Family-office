@@ -1,6 +1,10 @@
 """
 services/analytics_service.py – Aggregation and analytics business logic.
 Delegates heavy computation to app/analytics/ modules.
+
+CHANGED: get_dashboard_summary() now passes `year` to monthly_totals() so the
+         chart always shows all 12 months of the selected year (with zero-fill
+         for months that have no data) instead of a rolling last-12 window.
 """
 import uuid
 from datetime import datetime, timedelta
@@ -17,6 +21,9 @@ from app.schemas.analytics import (
 )
 from app.analytics.financial_health import compute_financial_health_score
 from app.analytics.spending_analysis import compute_category_breakdown
+
+# Short month names used to build the full-year scaffold
+_ALL_MONTHS = [f"{m:02d}" for m in range(1, 13)]
 
 
 class AnalyticsService:
@@ -68,11 +75,15 @@ class AnalyticsService:
         net = income - expenses
         savings_rate = round(float(net / income * 100), 2) if income > 0 else 0.0
 
-        # Monthly trends (last 12 months)
-        raw_monthly = await self.repo.monthly_totals(family_id, months=12)
-        trends = self._build_monthly_trends(raw_monthly)
+        # ── CHANGED ───────────────────────────────────────────────────────
+        # Pass `year` so the repo scopes the query to that calendar year.
+        # _build_monthly_trends() then zero-fills any missing months so the
+        # chart always has 12 bars (Jan–Dec) for the selected year.
+        raw_monthly = await self.repo.monthly_totals(family_id, year=year)
+        trends = self._build_monthly_trends(raw_monthly, year=year)
+        # ─────────────────────────────────────────────────────────────────
 
-        # Category breakdown
+        # Category breakdown (already scoped to the selected month)
         raw_cats = await self.repo.sum_by_category(family_id, date_from, date_to)
         cat_breakdown = compute_category_breakdown(raw_cats, expenses)
 
@@ -94,11 +105,31 @@ class AnalyticsService:
             financial_health_score=health_score,
         )
 
-    def _build_monthly_trends(self, raw: list[dict]) -> list[MonthlyTrend]:
+    # ── CHANGED ───────────────────────────────────────────────────────────
+    # Added `year` parameter. When provided the method builds a full 12-slot
+    # scaffold (Jan–Dec of that year) and fills in actual data where it exists,
+    # leaving zeroes for months with no transactions. This guarantees the
+    # frontend always receives exactly 12 data points for the year chart.
+    def _build_monthly_trends(
+        self,
+        raw: list[dict],
+        year: int | None = None,
+    ) -> list[MonthlyTrend]:
         """Pivot raw (month, type, total) rows into MonthlyTrend objects."""
         pivot: dict[str, dict] = {}
+
+        # Pre-fill all 12 months of the year with zeros so the chart has
+        # a complete scaffold even if some months have no transactions.
+        if year is not None:
+            for m in _ALL_MONTHS:
+                pivot[f"{year}-{m}"] = {"income": Decimal("0"), "expenses": Decimal("0")}
+
         for row in raw:
-            key = row["month"].strftime("%Y-%m") if hasattr(row["month"], "strftime") else str(row["month"])[:7]
+            key = (
+                row["month"].strftime("%Y-%m")
+                if hasattr(row["month"], "strftime")
+                else str(row["month"])[:7]
+            )
             if key not in pivot:
                 pivot[key] = {"income": Decimal("0"), "expenses": Decimal("0")}
             if row["type"] == TransactionType.INCOME:
@@ -107,18 +138,24 @@ class AnalyticsService:
                 pivot[key]["expenses"] += Decimal(str(row["total"]))
 
         trends = []
-        for month, vals in sorted(pivot.items()):
-            income = vals["income"]
+        for month_key, vals in sorted(pivot.items()):
+            income   = vals["income"]
             expenses = vals["expenses"]
-            net = income - expenses
-            rate = round(float(net / income * 100), 2) if income > 0 else 0.0
+            net      = income - expenses
+            rate     = round(float(net / income * 100), 2) if income > 0 else 0.0
             trends.append(
                 MonthlyTrend(
-                    month=month,
+                    month=month_key,
                     income=income,
                     expenses=expenses,
                     net=net,
                     savings_rate=rate,
                 )
             )
-        return trends[-12:]  # keep last 12 months
+
+        # When no year is given (legacy callers) keep the old 12-month cap
+        if year is None:
+            trends = trends[-12:]
+
+        return trends
+    # ─────────────────────────────────────────────────────────────────────

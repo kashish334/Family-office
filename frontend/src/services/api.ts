@@ -1,3 +1,7 @@
+// frontend/src/services/api.ts
+// CHANGED: analytics.dashboard() now accepts optional { year, month } params
+//          so the Dashboard page can pass the filter values.
+
 // @ts-ignore
 const BASE_URL: string = (import.meta as any).env?.VITE_API_URL || "http://localhost:8000";
 
@@ -77,8 +81,20 @@ export const api = {
   },
 
   analytics: {
-    dashboard: () =>
-      request<DashboardData>(`/api/v1/families/${fid()}/analytics/dashboard`),
+    // ── CHANGED ──────────────────────────────────────────────────────────────
+    // Added optional `year` and `month` parameters. The backend route at
+    // GET /api/v1/families/{id}/analytics/dashboard already accepts these as
+    // query params (year: int, month: int). Defaults fall back to "now" so
+    // existing call-sites that omit the argument remain unaffected.
+    dashboard: (year?: number, month?: number) => {
+      const now = new Date();
+      const y = year ?? now.getFullYear();
+      const m = month ?? now.getMonth() + 1;
+      return request<DashboardData>(
+        `/api/v1/families/${fid()}/analytics/dashboard?year=${y}&month=${m}`
+      );
+    },
+    // ─────────────────────────────────────────────────────────────────────────
     healthScore: () =>
       request<any>(`/api/v1/families/${fid()}/analytics/health-score`),
     forecast: () =>
