@@ -64,7 +64,6 @@ def forecast_expenses(
         )
     return forecasts
 
-
 def forecast_savings_goal(
     current_amount: float,
     target_amount: float,

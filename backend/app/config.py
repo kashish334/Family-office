@@ -63,10 +63,11 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 60
     refresh_token_expire_days: int = 30
 
-    # ── OpenAI ────────────────────────────────────────────────────
-    openai_api_key: str = ""
-    openai_model: str = "gpt-4o-mini"
-    openai_max_tokens: int = 2048
+    # ── Gemini (via OpenAI-compatible endpoint) ──────────────────────
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-2.5-flash"
+    gemini_base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai/"
+    gemini_max_tokens: int = 2048
 
     # ── Redis / Celery ────────────────────────────────────────────
     redis_url: str = "redis://localhost:6379/0"

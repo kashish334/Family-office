@@ -1,16 +1,32 @@
 """
 ai/prompts.py – Centralised AI prompt templates.
+
+CHANGED: All currency symbols switched from $ (USD) to ₹ (INR) to match the
+rest of the app. Category context now uses the real `name` field (available
+since the sum_by_category JOIN fix) instead of falling back to category_id/UUIDs.
+Also instructs the AI to always use ₹ and avoid markdown bullet/asterisk syntax
+that wasn't rendering in the chat UI.
 """
 
-SYSTEM_PROMPT = """You are a sophisticated AI financial advisor for Family Office, a premium wealth management platform.
+SYSTEM_PROMPT = """You are a sophisticated AI financial advisor for Family Office, a premium wealth management platform based in India.
 
 Your role:
 - Analyse family financial data with precision and care
 - Provide actionable, personalised advice grounded in the user's actual data
 - Use a warm, professional tone – like a trusted private banker
-- Always quantify recommendations when possible (e.g. "saving $200/mo more would reach your goal 3 months earlier")
+- Always quantify recommendations when possible (e.g. "saving ₹2,000/mo more would reach your goal 3 months earlier")
 - Flag risks clearly but constructively
 - Respect financial privacy; never expose sensitive data unnecessarily
+
+Currency:
+- ALL monetary amounts are in Indian Rupees (INR). Always use the ₹ symbol (e.g. ₹50,000), never $ or USD.
+
+Context awareness:
+- You will be given the current date and a month-by-month breakdown of the user's income/expenses for the current year. Use this to answer questions about specific months (e.g. "How did I do in July?") directly — do not say you lack access to that data if it appears in the breakdown.
+
+Formatting:
+- Do NOT use markdown syntax such as **bold**, *bullets*, or # headings — the chat UI displays plain text only.
+- For lists, use simple line breaks with a dash "-" instead of asterisks.
 
 Your expertise covers:
 - Family budget optimisation
@@ -35,18 +51,20 @@ def build_context_message(
     active_goals: list[dict],
 ) -> str:
     """Build a structured context block injected before user messages."""
+    # ── CHANGED: use real category `name` (from JOIN), fall back to "Uncategorized" ──
     cats = "\n".join(
-        f"  • {c.get('name', c.get('category_id', 'Other'))}: ${c.get('total', 0):,.0f}"
+        f"  - {c.get('name') or 'Uncategorized'}: ₹{c.get('total', 0):,.0f}"
         for c in top_categories[:5]
     )
+    # ── CHANGED: ₹ instead of $ ────────────────────────────────────────────────
     goals = "\n".join(
-        f"  • {g['name']}: {g['progress_pct']:.0f}% complete (target ${g['target_amount']:,.0f})"
+        f"  - {g['name']}: {g['progress_pct']:.0f}% complete (target ₹{g['target_amount']:,.0f})"
         for g in active_goals[:3]
     )
 
     return f"""[Live Financial Context]
-Monthly Income:    ${income:,.2f}
-Monthly Expenses:  ${expenses:,.2f}
+Monthly Income:    ₹{income:,.2f}
+Monthly Expenses:  ₹{expenses:,.2f}
 Savings Rate:      {savings_rate:.1f}%
 
 Top Spending Categories:
@@ -62,7 +80,7 @@ SPENDING_ANALYSIS_PROMPT = """Analyse the following monthly spending data and id
 2. One specific actionable saving opportunity
 3. Whether the overall trend is healthy
 
-Be specific with dollar amounts. Keep it under 150 words.
+Be specific with rupee (₹) amounts. Keep it under 150 words. Do not use markdown formatting.
 
 Data:
 {data}
@@ -71,16 +89,16 @@ Data:
 MONTHLY_SUMMARY_PROMPT = """Generate a professional monthly financial summary for {month_name} {year}.
 
 Financial Data:
-- Total Income: ${income:,.2f}
-- Total Expenses: ${expenses:,.2f}
-- Net Savings: ${net:,.2f}
+- Total Income: ₹{income:,.2f}
+- Total Expenses: ₹{expenses:,.2f}
+- Net Savings: ₹{net:,.2f}
 - Savings Rate: {savings_rate:.1f}%
 
 Top Spending Categories:
 {categories}
 
 Write in second person ("You spent..."). Highlight 2-3 key insights and give 2 actionable recommendations.
-Keep under 250 words. Use a professional, encouraging tone.
+Keep under 250 words. Use a professional, encouraging tone. Use ₹ for all amounts. Do not use markdown formatting.
 """
 
 ANOMALY_DETECTION_PROMPT = """Review these recent transactions and identify any that appear:
@@ -88,9 +106,11 @@ ANOMALY_DETECTION_PROMPT = """Review these recent transactions and identify any 
 - Occurring at unusual times
 - Potentially duplicated or erroneous
 
+All amounts are in Indian Rupees (₹).
+
 Transactions:
 {transactions}
 
-Reply ONLY with a JSON object: {{"anomalies": [{"description": str, "reason": str, "severity": "low|medium|high"}]}}
+Reply ONLY with a JSON object: {{"anomalies": [{{"description": str, "reason": str, "severity": "low|medium|high"}}]}}
 Only include genuinely suspicious items. If none found, return empty array.
 """

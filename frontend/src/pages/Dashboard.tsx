@@ -30,7 +30,7 @@ function StatCard({ label, value, sub, trend }: {
   return (
     <div style={{ background: 'var(--warm-white)', borderRadius: 12, padding: '20px 24px', flex: 1 }}>
       <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>{label}</div>
-      <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 32, fontWeight: 500, marginBottom: 6 }}>{value}</div>
+      <div style={{ fontFamily: 'DM Serif Display', fontSize: 32, fontWeight: 500, marginBottom: 6 }}>{value}</div>
       {sub && (
         <div style={{ fontSize: 12, color: trend === 'down' ? 'var(--red)' : 'var(--sage)', display: 'flex', alignItems: 'center', gap: 4 }}>
           {trend === 'down' ? <TrendingDown size={12} /> : <TrendingUp size={12} />} {sub}
