@@ -71,13 +71,6 @@ export default function Sidebar() {
         {bottomNavItems.map(item => <NavBtn key={item.path} {...item} />)}
       </nav>
 
-      <div style={{ padding: '0 10px 12px' }}>
-        <button onClick={() => navigate('/transactions')}
-          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px', background: 'var(--sage)', border: 'none', borderRadius: 8, color: 'white', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
-          <Plus size={14} /> Add Transaction
-        </button>
-      </div>
-
       <div style={{ padding: '12px 10px', borderTop: '1px solid var(--border)' }}>
         {user && (
           <div style={{ padding: '6px 12px', marginBottom: 4 }}>
