@@ -9,6 +9,8 @@ import Transactions from './pages/Transactions';
 import SavingsGoals from './pages/SavingsGoals';
 import BudgetPlanning from './pages/BudgetPlanning';
 import AIAdvisor from './pages/AIAdvisor';
+import Settings from './pages/Settings';
+import { ThemeProvider } from './context/ThemeContext';
 
 function ComingSoon({ title }: { title: string }) {
   return (
@@ -59,7 +61,7 @@ function AppRoutes() {
       <Route path="/reports" element={<ProtectedLayout><ComingSoon title="Reports" /></ProtectedLayout>} />
       <Route path="/members" element={<ProtectedLayout><ComingSoon title="Members" /></ProtectedLayout>} />
       <Route path="/bills" element={<ProtectedLayout><ComingSoon title="Bills & Reminders" /></ProtectedLayout>} />
-      <Route path="/settings" element={<ProtectedLayout><ComingSoon title="Settings" /></ProtectedLayout>} />
+      <Route path="/settings" element={<ProtectedLayout><Settings /></ProtectedLayout>} />
 
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
@@ -69,9 +71,11 @@ function AppRoutes() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 }

@@ -51,7 +51,11 @@ export const api = {
       }),
     register: (data: { email: string; password: string; full_name: string }) =>
       request<any>('/api/v1/auth/register', { method: 'POST', body: JSON.stringify(data) }),
-    me: () => request<{ id: string; email: string; full_name: string; role: string }>('/api/v1/auth/me'),
+    me: () => request<{ id: string; email: string; full_name: string; role: string; phone?: string }>('/api/v1/auth/me'),
+    updateProfile: (data: { full_name?: string; phone?: string }) =>
+      request<any>('/api/v1/auth/me', { method: 'PATCH', body: JSON.stringify(data) }),
+    changePassword: (current_password: string, new_password: string) =>
+      request<any>('/api/v1/auth/change-password', { method: 'POST', body: JSON.stringify({ current_password, new_password }) }),
   },
 
   families: {
@@ -59,6 +63,8 @@ export const api = {
       request<Family>('/api/v1/families/', { method: 'POST', body: JSON.stringify({ name }) }),
     get: (id: string) =>
       request<Family>(`/api/v1/families/${id}`),
+    update: (id: string, data: { name: string }) =>
+      request<Family>(`/api/v1/families/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   },
 
   transactions: {
