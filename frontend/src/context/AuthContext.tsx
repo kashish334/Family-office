@@ -1,10 +1,13 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { api, getToken, setToken, clearToken, getFamilyId, setFamilyId } from '../services/api';
+import { api, getToken, setToken, clearToken, setFamilyId } from '../services/api';
 
 interface User { id: string; email: string; full_name: string; role: string; }
 interface AuthCtx {
   user: User | null;
   loading: boolean;
+  familyReady: boolean;
+  needsFamilySetup: boolean;
+  createFamily: (name: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
 }
@@ -12,17 +15,11 @@ interface AuthCtx {
 const AuthContext = createContext<AuthCtx>({} as AuthCtx);
 export const useAuth = () => useContext(AuthContext);
 
-// Store family_id per user so it survives logout/login
-function getUserFamilyKey(userId: string) {
-  return `family_id_${userId}`;
-}
+function getUserFamilyKey(userId: string) { return `family_id_${userId}`; }
 
 function loadFamilyForUser(userId: string) {
   const stored = localStorage.getItem(getUserFamilyKey(userId));
-  if (stored) {
-    setFamilyId(stored); // sync to the key api.ts reads
-    return stored;
-  }
+  if (stored) { setFamilyId(stored); return stored; }
   return null;
 }
 
@@ -31,49 +28,44 @@ function saveFamilyForUser(userId: string, familyId: string) {
   setFamilyId(familyId);
 }
 
-async function ensureFamily(userId: string) {
-  // Check if this user already has a family stored locally for this browser
-  const existing = loadFamilyForUser(userId);
-  if (existing) return;
+// Returns true if user already has a family (cached or from backend invite).
+// Returns false only for a brand-new user who has never created/joined one.
+async function resolveFamily(userId: string): Promise<boolean> {
+  // 1. Locally cached — existing user, all their data is intact
+  if (loadFamilyForUser(userId)) return true;
 
-  // Ask the backend which families (if any) this user already belongs to —
-  // this covers the case where the user was invited as a member of someone
-  // else's family and is logging in for the first time on this device.
+  // 2. Check backend — invited into someone else's family on another device
   try {
     const memberships = await api.families.mine();
     if (memberships.length > 0) {
-      // Prefer a family where the user is admin, else just take the first one.
       const admin = memberships.find(m => m.role === 'admin');
       saveFamilyForUser(userId, (admin || memberships[0]).family_id);
-      return;
+      return true;
     }
-  } catch (e: any) {
-    console.error('Could not fetch existing family memberships:', e);
+  } catch (e) {
+    console.error('Could not fetch family memberships:', e);
   }
 
-  // No memberships anywhere — this is a brand-new user, create their own family.
-  try {
-    const f = await api.families.create('My Family');
-    saveFamilyForUser(userId, f.id);
-  } catch (e: any) {
-    console.error('Could not create family:', e);
-  }
+  // 3. Genuinely new user — needs to pick a name for their family
+  return false;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [familyReady, setFamilyReady] = useState(false);
+  const [needsFamilySetup, setNeedsFamilySetup] = useState(false);
 
   useEffect(() => {
     if (getToken()) {
       api.auth.me()
         .then(async (me) => {
           setUser(me);
-          await ensureFamily(me.id);
+          const has = await resolveFamily(me.id);
+          setFamilyReady(has);
+          setNeedsFamilySetup(!has);
         })
-        .catch(() => {
-          clearToken();
-        })
+        .catch(() => clearToken())
         .finally(() => setLoading(false));
     } else {
       setLoading(false);
@@ -85,17 +77,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(res.access_token);
     const me = await api.auth.me();
     setUser(me);
-    await ensureFamily(me.id); // uses stored family if exists
+    const has = await resolveFamily(me.id);
+    setFamilyReady(has);
+    setNeedsFamilySetup(!has);
+  };
+
+  const createFamily = async (name: string) => {
+    if (!user) return;
+    const f = await api.families.create(name.trim() || 'My Family');
+    saveFamilyForUser(user.id, f.id);
+    setFamilyReady(true);
+    setNeedsFamilySetup(false);
   };
 
   const logout = () => {
     clearToken();
-    // DO NOT clear family_id — we keep it so data persists on next login
     setUser(null);
+    setFamilyReady(false);
+    setNeedsFamilySetup(false);
+    // intentionally keep family_id_<userId> in localStorage so data stays on next login
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, familyReady, needsFamilySetup, createFamily, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

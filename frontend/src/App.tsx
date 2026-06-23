@@ -10,6 +10,7 @@ import SavingsGoals from './pages/SavingsGoals';
 import BudgetPlanning from './pages/BudgetPlanning';
 import AIAdvisor from './pages/AIAdvisor';
 import Settings from './pages/Settings';
+import FamilySetup from './pages/FamilySetup';
 import { ThemeProvider } from './context/ThemeContext';
 
 function ComingSoon({ title }: { title: string }) {
@@ -23,13 +24,14 @@ function ComingSoon({ title }: { title: string }) {
 }
 
 function ProtectedLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, loading, needsFamilySetup } = useAuth();
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: 'var(--text-muted)' }}>
       Loading…
     </div>
   );
   if (!user) return <Navigate to="/login" replace />;
+  if (needsFamilySetup) return <Navigate to="/family-setup" replace />;
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--cream)' }}>
       <Sidebar />
@@ -39,12 +41,15 @@ function ProtectedLayout({ children }: { children: React.ReactNode }) {
 }
 
 function AppRoutes() {
-  const { user } = useAuth();
+  const { user, needsFamilySetup } = useAuth();
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
-      <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login />} />
-      <Route path="/register" element={user ? <Navigate to="/dashboard" /> : <Register />} />
+      <Route path="/login" element={user ? <Navigate to={needsFamilySetup ? '/family-setup' : '/dashboard'} /> : <Login />} />
+      <Route path="/register" element={user ? <Navigate to={needsFamilySetup ? '/family-setup' : '/dashboard'} /> : <Register />} />
+
+      {/* Family setup — only for new users, no sidebar */}
+      <Route path="/family-setup" element={user ? <FamilySetup /> : <Navigate to="/login" replace />} />
 
       {/* Main pages */}
       <Route path="/dashboard" element={<ProtectedLayout><Dashboard /></ProtectedLayout>} />
@@ -53,11 +58,9 @@ function AppRoutes() {
       <Route path="/budget" element={<ProtectedLayout><BudgetPlanning /></ProtectedLayout>} />
       <Route path="/ai" element={<ProtectedLayout><AIAdvisor /></ProtectedLayout>} />
 
-      {/* Sidebar pages — income/expenses reuse Transactions with filter hint */}
       <Route path="/income" element={<ProtectedLayout><Transactions key="income" defaultType="income" /></ProtectedLayout>} />
       <Route path="/expenses" element={<ProtectedLayout><Transactions key="expense" defaultType="expense" /></ProtectedLayout>} />
 
-      {/* Coming soon pages */}
       <Route path="/reports" element={<ProtectedLayout><ComingSoon title="Reports" /></ProtectedLayout>} />
       <Route path="/members" element={<ProtectedLayout><ComingSoon title="Members" /></ProtectedLayout>} />
       <Route path="/bills" element={<ProtectedLayout><ComingSoon title="Bills & Reminders" /></ProtectedLayout>} />
