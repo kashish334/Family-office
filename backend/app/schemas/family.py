@@ -44,3 +44,10 @@ class MemberResponse(BaseModel):
     display_name: str | None
     joined_at: datetime
     model_config = {"from_attributes": True}
+
+
+class MyMembershipResponse(BaseModel):
+    family_id: uuid.UUID
+    family_name: str
+    role: MemberRole
+    model_config = {"from_attributes": True}

@@ -12,10 +12,11 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useThemeContext } from '../context/ThemeContext';
-import { api, getFamilyId } from '../services/api';
+import { api, getFamilyId, FamilyMemberRow } from '../services/api';
 import {
   User, Lock, Palette, Users, Download, LogOut,
   Check, X, Eye, EyeOff, ChevronRight, Moon, Sun,
+  UserPlus, Trash2, Shield, Crown,
 } from 'lucide-react';
 
 // ── tiny helpers ──────────────────────────────────────────────────────────────
@@ -152,7 +153,60 @@ export default function Settings() {
     }
   };
 
-  // ── 4. Export ──────────────────────────────────────────────────────────────
+  // ── 4. Members ─────────────────────────────────────────────────────────────
+  const [members, setMembers] = useState<FamilyMemberRow[]>([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState<'member' | 'dependent' | 'advisor' | 'admin'>('member');
+  const [inviting, setInviting] = useState(false);
+
+  const isAdmin = (user?.role || '').toLowerCase() === 'admin' ||
+    members.find(m => m.user_id === user?.id)?.role === 'admin';
+
+  const loadMembers = async () => {
+    if (!familyId) return;
+    setMembersLoading(true);
+    try {
+      const list = await api.families.listMembers(familyId);
+      setMembers(list);
+    } catch (e: any) {
+      // Non-admins may still be able to list members depending on backend rules;
+      // fail quietly if not.
+    } finally {
+      setMembersLoading(false);
+    }
+  };
+
+  useEffect(() => { loadMembers(); }, [familyId]);
+
+  const sendInvite = async () => {
+    if (!familyId) return;
+    if (!inviteEmail.trim()) { showToast('Enter an email address', 'error'); return; }
+    setInviting(true);
+    try {
+      await api.families.inviteMember({ email: inviteEmail.trim(), role: inviteRole }, familyId);
+      showToast('Member added to family');
+      setInviteEmail('');
+      await loadMembers();
+    } catch (e: any) {
+      showToast(e.message || 'Could not add member', 'error');
+    } finally {
+      setInviting(false);
+    }
+  };
+
+  const removeMember = async (userId: string) => {
+    if (!familyId) return;
+    try {
+      await api.families.removeMember(userId, familyId);
+      showToast('Member removed');
+      await loadMembers();
+    } catch (e: any) {
+      showToast(e.message || 'Could not remove member', 'error');
+    }
+  };
+
+  // ── 5. Export ──────────────────────────────────────────────────────────────
   const exportCSV = async () => {
     try {
       const res = await api.transactions.list({ page: '1', per_page: '1000' });
@@ -280,6 +334,60 @@ export default function Settings() {
           </Row>
           <div style={{ padding: '12px 20px', display: 'flex', justifyContent: 'flex-end' }}>
             <SaveBtn onClick={saveFamily} saving={familySaving} />
+          </div>
+        </Section>
+
+        {/* ── SECTION 4b: Family Members ── */}
+        <Section icon={Users} title="Family Members">
+          {isAdmin && (
+            <Row label="Add Member">
+              <input style={{ ...inp, minWidth: 200 }} placeholder="member@example.com" type="email"
+                value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} />
+              <select value={inviteRole} onChange={e => setInviteRole(e.target.value as any)}
+                style={{ ...inp, minWidth: 110 }}>
+                <option value="member">Member</option>
+                <option value="dependent">Dependent</option>
+                <option value="advisor">Advisor</option>
+                <option value="admin">Admin</option>
+              </select>
+              <button onClick={sendInvite} disabled={inviting}
+                style={{ padding: '7px 14px', background: inviting ? '#9ab89d' : 'var(--sage)', border: 'none', borderRadius: 8, color: 'white', fontSize: 13, fontWeight: 500, cursor: inviting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
+                <UserPlus size={13} /> {inviting ? 'Adding…' : 'Add'}
+              </button>
+            </Row>
+          )}
+          {!isAdmin && (
+            <Row label="Add Member">
+              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Only family admins can add members.</span>
+            </Row>
+          )}
+          <div style={{ padding: '12px 20px' }}>
+            <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10 }}>
+              The person must already have a Family Office account (have them register first), then add their email here. They'll see this family next time they log in.
+            </p>
+            {membersLoading ? (
+              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Loading members…</span>
+            ) : members.length === 0 ? (
+              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>No members found.</span>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {members.map(m => (
+                  <div key={m.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--cream)', borderRadius: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      {m.role === 'admin' ? <Crown size={13} color="var(--gold)" /> : <Shield size={13} color="var(--text-muted)" />}
+                      <span style={{ fontSize: 13 }}>{m.display_name || m.user_id.slice(0, 8) + '…'}</span>
+                      <span style={{ fontSize: 11, background: 'white', border: '1px solid var(--border)', borderRadius: 20, padding: '2px 8px', color: 'var(--text-muted)', textTransform: 'capitalize' }}>{m.role}</span>
+                    </div>
+                    {isAdmin && m.user_id !== user?.id && (
+                      <button onClick={() => removeMember(m.user_id)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--red)', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}>
+                        <Trash2 size={13} /> Remove
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </Section>
 

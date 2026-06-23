@@ -19,9 +19,28 @@ from app.schemas.family import (
     FamilyUpdate,
     InviteMemberRequest,
     MemberResponse,
+    MyMembershipResponse,
 )
 
 router = APIRouter(prefix="/families", tags=["Families"])
+
+
+@router.get("/me", response_model=list[MyMembershipResponse])
+async def list_my_families(
+    current_user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> list[MyMembershipResponse]:
+    """List every family the current user belongs to (owned or invited into)."""
+    repo = FamilyRepository(db)
+    memberships = await repo.list_for_user(current_user.id)
+    result: list[MyMembershipResponse] = []
+    for m in memberships:
+        family = await repo.get_by_id(m.family_id)
+        if family:
+            result.append(
+                MyMembershipResponse(family_id=family.id, family_name=family.name, role=m.role)
+            )
+    return result
 
 
 @router.post("/", response_model=FamilyResponse, status_code=201)

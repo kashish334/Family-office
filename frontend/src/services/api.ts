@@ -65,6 +65,16 @@ export const api = {
       request<Family>(`/api/v1/families/${id}`),
     update: (id: string, data: { name: string }) =>
       request<Family>(`/api/v1/families/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    mine: () =>
+      request<{ family_id: string; family_name: string; role: string }[]>('/api/v1/families/me'),
+    listMembers: (id?: string) =>
+      request<FamilyMemberRow[]>(`/api/v1/families/${id || fid()}/members`),
+    inviteMember: (data: { email: string; role?: string; display_name?: string }, id?: string) =>
+      request<FamilyMemberRow>(`/api/v1/families/${id || fid()}/members`, {
+        method: 'POST', body: JSON.stringify(data),
+      }),
+    removeMember: (userId: string, id?: string) =>
+      request<void>(`/api/v1/families/${id || fid()}/members/${userId}`, { method: 'DELETE' }),
   },
 
   transactions: {
@@ -158,6 +168,15 @@ export const api = {
 export interface Family {
   id: string;
   name: string;
+}
+
+export interface FamilyMemberRow {
+  id: string;
+  user_id: string;
+  family_id: string;
+  role: 'admin' | 'member' | 'dependent' | 'advisor';
+  display_name: string | null;
+  joined_at: string;
 }
 
 export interface Transaction {

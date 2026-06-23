@@ -32,11 +32,26 @@ function saveFamilyForUser(userId: string, familyId: string) {
 }
 
 async function ensureFamily(userId: string) {
-  // Check if this user already has a family stored
+  // Check if this user already has a family stored locally for this browser
   const existing = loadFamilyForUser(userId);
   if (existing) return;
 
-  // No stored family — create one
+  // Ask the backend which families (if any) this user already belongs to —
+  // this covers the case where the user was invited as a member of someone
+  // else's family and is logging in for the first time on this device.
+  try {
+    const memberships = await api.families.mine();
+    if (memberships.length > 0) {
+      // Prefer a family where the user is admin, else just take the first one.
+      const admin = memberships.find(m => m.role === 'admin');
+      saveFamilyForUser(userId, (admin || memberships[0]).family_id);
+      return;
+    }
+  } catch (e: any) {
+    console.error('Could not fetch existing family memberships:', e);
+  }
+
+  // No memberships anywhere — this is a brand-new user, create their own family.
   try {
     const f = await api.families.create('My Family');
     saveFamilyForUser(userId, f.id);

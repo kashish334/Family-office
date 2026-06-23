@@ -52,6 +52,16 @@ class FamilyRepository:
         )
         return result.scalar_one_or_none()
 
+    async def list_for_user(self, user_id: uuid.UUID) -> list[FamilyMember]:
+        """Return all active memberships (any role) for a given user, across families."""
+        result = await self.db.execute(
+            select(FamilyMember).where(
+                FamilyMember.user_id == user_id,
+                FamilyMember.deleted_at.is_(None),
+            )
+        )
+        return list(result.scalars().all())
+
     async def list_members(self, family_id: uuid.UUID) -> list[FamilyMember]:
         result = await self.db.execute(
             select(FamilyMember).where(
