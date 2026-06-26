@@ -24,25 +24,11 @@ configure_logging()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from loguru import logger
+    from app.database.init_db import init_db
+
     logger.info(f"🚀 Starting {settings.app_name} v{settings.app_version} [{settings.environment}]")
 
-    # Run migrations on every startup (safe — alembic skips already-applied ones)
-    try:
-        import subprocess
-        import os
-        db_url = (
-            f"postgresql+asyncpg://{settings.postgres_user}:{settings.postgres_password}"
-            f"@{settings.postgres_host}:{settings.postgres_port}/{settings.postgres_db}"
-        )
-        result = subprocess.run(
-            ["python", "-m", "alembic", "-x", f"sqlalchemy.url={db_url}", "upgrade", "head"],
-            capture_output=True, text=True, cwd="/app"
-        )
-        logger.info(f"Migrations: {result.stdout}")
-        if result.returncode != 0:
-            logger.error(f"Migration error: {result.stderr}")
-    except Exception as e:
-        logger.error(f"Could not run migrations: {e}")
+    await init_db()
 
     yield
 
